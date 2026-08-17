@@ -13,10 +13,7 @@ import {
   calculateBiomassGainKg,
   calculateFcr,
 } from "@/src/domain/kpi/growth";
-import {
-  evaluateCycleRules,
-  type RuleEvaluation,
-} from "@/src/domain/decision/evaluate-cycle-rules";
+import { evaluateCycleRules } from "@/src/domain/decision/evaluate-cycle-rules";
 import { DEFAULT_DECISION_ENGINE_CONFIG } from "@/src/domain/decision/config";
 
 export interface EvaluateCycleAlertsResult {
@@ -157,6 +154,7 @@ export async function evaluateCycleAlerts(
   let opened = 0;
   let updated = 0;
   let resolved = 0;
+  const activeRuleCodes = new Set<string>();
 
   for (const evaluation of evaluations) {
     const matches = existingAlerts.filter(
@@ -164,7 +162,27 @@ export async function evaluateCycleAlerts(
     );
     const existing = matches[0] ?? null;
 
+    const ratio =
+      evaluation.ruleCode === "FCR_ABOVE_TARGET" &&
+      typeof evaluation.metadata?.ratio === "number"
+        ? evaluation.metadata.ratio
+        : null;
+    const holdForFcrHysteresis =
+      !evaluation.active &&
+      existing !== null &&
+      ratio !== null &&
+      ratio >= DEFAULT_DECISION_ENGINE_CONFIG.fcrResolutionMultiplier &&
+      (cycle.status === CycleStatus.ACTIVE ||
+        cycle.status === CycleStatus.HARVESTING);
+
+    if (holdForFcrHysteresis) {
+      activeRuleCodes.add(evaluation.ruleCode);
+      continue;
+    }
+
     if (evaluation.active) {
+      activeRuleCodes.add(evaluation.ruleCode);
+
       if (existing) {
         await db.alert.update({
           where: { id: existing.id },
@@ -229,8 +247,6 @@ export async function evaluateCycleAlerts(
     opened,
     updated,
     resolved,
-    activeRuleCodes: evaluations
-      .filter((evaluation: RuleEvaluation) => evaluation.active)
-      .map((evaluation) => evaluation.ruleCode),
+    activeRuleCodes: [...activeRuleCodes],
   };
 }
