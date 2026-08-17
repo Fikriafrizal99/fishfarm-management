@@ -26,23 +26,25 @@ The repository includes a repeatable local development database:
 - `KLM-002` needs-attention scenario
 - database health endpoint
 
-It also includes the first real application flow:
+The main application flow now reaches biological sampling:
 
 ```text
-Daily Input
-   ↓
+Daily Input / Sampling
+        ↓
+Server Action
+        ↓
 Application Service
-   ↓
-PostgreSQL raw logs + canonical Expense ledger
-   ↓
-Dashboard Application Service
-   ↓
-Calculated SR / mortality / biomass / FCR / cost
-   ↓
-Mobile-first Dashboard
+        ↓
+PostgreSQL raw records + canonical Expense ledger
+        ↓
+KPI calculation
+        ↓
+Dashboard + Pond Detail
+        ↓
+SR / mortality / ABW / biomass / growth / FCR / cost / alerts
 ```
 
-The dashboard no longer falls back to hardcoded farm KPI values when PostgreSQL data is available.
+There is no hardcoded KPI fallback when PostgreSQL data is unavailable. The UI shows an explicit unavailable/empty state instead.
 
 ### Windows / PowerShell bootstrap
 
@@ -68,11 +70,11 @@ npm run prisma:studio
 
 Full database instructions: [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DATABASE.md).
 
-## Implemented Application Flow — V0.4
+## Implemented Application Flow — V0.5
 
-### Dashboard
+### Dashboard — `/`
 
-`/` reads active production cycles from PostgreSQL and calculates:
+Reads active production cycles from PostgreSQL and calculates:
 
 - active pond count
 - estimated active fish population
@@ -84,9 +86,11 @@ Full database instructions: [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DA
 - per-cycle status and open-alert count
 - current cost per estimated standing kg
 
-### Daily Input
+Each active pond links to its own detail page.
 
-`/input` provides a server-backed form for:
+### Daily Input — `/input`
+
+Server-backed operational form for:
 
 - feed quantity
 - mortality quantity
@@ -96,16 +100,50 @@ Full database instructions: [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DA
 
 Feed input creates a linked financial transaction when a feed unit cost exists, preventing feed cost from being counted twice.
 
+### Sampling & Growth — `/sampling`
+
+Server-backed biological sampling flow for:
+
+- sample count
+- total sample weight
+- observed/direct ABW
+- average length
+- optional observed population
+- sampling notes
+
+The server derives ABW when total sample weight is provided. If both total sample weight and ABW are entered, the values are checked for reasonable consistency before the record is saved.
+
+### Pond Detail — `/ponds/[pondCode]`
+
+Displays one pond/cycle with database-backed calculations:
+
+- stocked and estimated live population
+- SR and mortality
+- latest ABW
+- estimated standing biomass
+- cumulative feed
+- biomass-gain FCR
+- target SR / FCR
+- cycle cost and cost per standing kg
+- expense-category breakdown
+- target harvest progress
+- active alerts
+- sampling growth history
+- weight gain between samples
+- Average Daily Gain (ADG)
+
+Sampling and Daily Input can be opened from Pond Detail with the current cycle preselected.
+
 ## MVP Modules
 
-1. Dashboard — **in progress / DB-backed**
-2. Pond Management
-3. Production Cycles
-4. Daily Input — **first write flow implemented**
-5. Sampling & Growth
-6. Expenses & Costing
-7. Harvest & Sales
-8. Alerts / Decision Engine
+1. Dashboard — **DB-backed V1**
+2. Pond Management — **detail view started**
+3. Production Cycles — **read model active**
+4. Daily Input — **write flow implemented**
+5. Sampling & Growth — **write + trend flow implemented**
+6. Expenses & Costing — **ledger/read summary started**
+7. Harvest & Sales — next
+8. Alerts / Decision Engine — seed/read path exists; live evaluation next
 
 ## Core KPIs
 
@@ -115,6 +153,8 @@ Feed input creates a linked financial transaction when a feed unit cost exists, 
 - Estimated Population
 - Estimated Biomass
 - Feed Conversion Ratio (FCR)
+- Weight Gain
+- Average Daily Gain (ADG)
 - Feed Cost
 - Total Production Cost
 - Estimated / Actual HPP per kg
@@ -131,6 +171,7 @@ Feed input creates a linked financial transaction when a feed unit cost exists, 
 - One source of truth: application database, not spreadsheets
 - Every important KPI must be traceable to raw records
 - Operational, biological, and financial data are connected by production cycle
+- Observed, estimated, projected, and final values must not be conflated
 - Alerts must explain why they fired
 - Historical cycles must remain auditable
 - Start simple; add sensors, AI, and automation only when useful data exists
@@ -180,9 +221,11 @@ The endpoint confirms PostgreSQL connectivity and reports basic development row 
 
 ## Status
 
-**Phase:** Database-backed Dashboard & Daily Operations  
-**Version:** 0.4  
+**Phase:** Sampling, Growth & Pond Detail  
+**Version:** 0.5  
 **Database:** local development bootstrap ready  
-**Dashboard:** reads raw PostgreSQL data  
-**First write flow:** daily feed / mortality / expense input implemented  
-**Next:** Sampling & Growth write flow, Pond Detail, then live Decision Engine evaluation
+**Dashboard:** DB-backed  
+**Daily operations:** write flow implemented  
+**Sampling & growth:** write + read trend implemented  
+**Pond detail:** DB-backed biological/financial overview implemented  
+**Next:** Harvest & Sales, Actual HPP, then live Decision Engine evaluation
