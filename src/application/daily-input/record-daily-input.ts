@@ -63,7 +63,10 @@ export async function recordDailyInput(
     });
 
     if (!cycle) throw new Error("Siklus budidaya tidak ditemukan");
-    if (![CycleStatus.ACTIVE, CycleStatus.HARVESTING].includes(cycle.status)) {
+    if (
+      cycle.status !== CycleStatus.ACTIVE &&
+      cycle.status !== CycleStatus.HARVESTING
+    ) {
       throw new Error("Input harian hanya dapat dicatat pada siklus aktif");
     }
 
