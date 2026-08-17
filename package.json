@@ -1,6 +1,6 @@
 {
   "name": "fishfarm-management",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -20,8 +20,9 @@
     "db:push": "prisma db push",
     "db:constraints": "tsx scripts/apply-db-constraints.ts",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma db push --force-reset && npm run db:constraints && npm run db:seed",
-    "db:bootstrap": "npm run db:up && npm run prisma:generate && npm run db:push && npm run db:constraints && npm run db:seed"
+    "decision:evaluate": "tsx scripts/evaluate-alerts.ts",
+    "db:reset": "prisma db push --force-reset && npm run db:constraints && npm run db:seed && npm run decision:evaluate",
+    "db:bootstrap": "npm run db:up && npm run prisma:generate && npm run db:push && npm run db:constraints && npm run db:seed && npm run decision:evaluate"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
