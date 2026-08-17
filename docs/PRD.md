@@ -1,374 +1,549 @@
 # Product Requirements Document — FishFarm Management
 
-Version: 0.1  
-Status: Foundation  
+Version: 0.8  
+Status: Active Development  
 Primary platform: Mobile-first web application / PWA
 
 ## 1. Product Summary
 
-FishFarm Management is an application for managing fish-farming operations by production cycle. It replaces fragmented notes and spreadsheets with a single application that records field activity, calculates biological and financial KPIs, monitors pond performance, and surfaces explainable alerts.
+FishFarm Management is one application with two connected but separate operating areas:
 
-## 2. Problem
+1. **Budidaya / Production** — field operations, biological performance, production cost, harvest, and alerts.
+2. **Sales CRM** — leads, customers, commercial pipeline, orders, fulfillment, invoices, and payments.
 
-Small and growing fish farms commonly have operational data but lack one connected system that answers:
+The product replaces fragmented notes and spreadsheets while preserving clear boundaries between biological production data and commercial transactions.
 
-- How much has each pond consumed in feed?
-- How many fish are estimated to remain alive?
-- Is growth still on target?
-- Is FCR becoming inefficient?
-- What is the real cost of production per kilogram?
-- What selling price is needed to break even?
-- Which pond needs attention today?
-- Which production cycle actually performed best?
+## 2. Product Vision
 
-The product should make these answers available without requiring manual spreadsheet formulas.
+Create a practical Fish Farm Operating System:
 
-## 3. Product Vision
+**Record → Monitor → Understand → Act → Harvest → Sell → Collect → Compare → Improve**
 
-Create a practical **Fish Farm Operating System** where a farmer can:
+## 3. Primary Users
 
-**Record → Monitor → Understand → Act → Compare → Improve**
-
-## 4. Target User
-
-### MVP Primary User
-Farm owner/operator managing one or several ponds and entering operational data directly from a phone.
-
-### Future Users
+### Production
+- owner/operator
 - farm manager
 - pond/operator staff
-- finance/admin staff
-- investor/owner viewer
 
-## 5. Product Goals
+### Commercial
+- owner
+- sales/admin
+- finance/admin
 
-### G1 — Complete Cycle Record
-Every active production cycle has traceable stocking, feeding, mortality, sampling, cost, and harvest records.
+MVP may still use one owner user, but schema and application boundaries must not prevent role-based access later.
 
-### G2 — Automatic KPI Calculation
-Users do not manually calculate SR, FCR, HPP, margin, biomass, or revenue.
+## 4. Product Goals
+
+### G1 — Complete Production Cycle Record
+Every production cycle has traceable stocking, feed, mortality, sampling, costs, harvests, and alerts.
+
+### G2 — Automatic Production KPIs
+Users do not manually calculate SR, FCR, biomass, HPP, profit, or margin.
 
 ### G3 — Fast Field Input
-Common daily records should be possible in under a minute on a phone.
+Routine pond input is mobile-first and fast.
 
 ### G4 — Early Problem Visibility
-The dashboard highlights ponds/cycles requiring attention.
+The production dashboard identifies cycles requiring attention.
 
-### G5 — Cycle Learning
-Completed cycles can be compared to improve operational decisions over time.
+### G5 — Commercial Pipeline Visibility
+The Sales dashboard answers who may buy, what has been ordered, what is committed, and what remains unpaid.
 
-## 6. Non-Goals for MVP
+### G6 — Production-to-Sales Traceability
+The app can trace fulfilled sales quantity back to harvested source without forcing CRM records to depend on a pond before fulfillment.
 
-- full accounting software
+### G7 — Historical Learning
+Completed cycles and customer transactions can later be compared to improve production and selling decisions.
+
+## 5. Core Domain Boundary Requirement
+
+Production and Sales CRM are separate bounded areas.
+
+Required relationship:
+
+```text
+ProductionCycle
+      ↓
+   Harvest
+      ↓
+ HarvestLot
+      ↓
+FulfillmentAllocation
+      ↑
+SalesOrderItem
+      ↑
+ SalesOrder
+      ↑
+  Customer
+```
+
+### Mandatory Rules
+
+- Lead must not require Pond or ProductionCycle.
+- Customer must not require Pond or ProductionCycle.
+- Opportunity must not require Pond or ProductionCycle.
+- SalesOrder must not require Pond or ProductionCycle.
+- A SalesOrder may exist before harvested inventory exists.
+- One SalesOrderItem may be fulfilled from several HarvestLots.
+- One HarvestLot may serve several SalesOrderItems.
+- The bridge is FulfillmentAllocation.
+
+## 6. Non-Goals for Current MVP
+
+- full accounting/GL software
 - payroll
-- inventory ERP
+- bank reconciliation
+- marketplace
+- complex warehouse ERP
 - IoT automation
 - AI disease diagnosis
-- feed purchasing marketplace
-- automatic bank reconciliation
-- complex multi-tenant SaaS billing
+- automatic pricing optimization
+- complex multi-company SaaS tenancy
 
-## 7. MVP Modules
+## 7. Production Modules
 
-### 7.1 Dashboard
+### 7.1 Production Dashboard
 
 Must show:
 - active ponds
-- active fish estimate
+- estimated active fish
 - estimated biomass
 - running production cost
-- average or selected-cycle SR
+- SR
 - mortality
 - FCR
-- estimated HPP
-- estimated margin
-- pond/cycle health status
-- recent alerts
-
-Dashboard must allow the user to enter the pond/cycle detail page.
+- cycle status
+- active alerts
 
 ### 7.2 Pond Management
 
-User can:
-- create pond
-- edit pond metadata
-- activate/deactivate pond
-- view current cycle
-- view previous cycles
-
-Minimum fields:
-- pond code
-- pond name
-- length
-- width
-- depth/volume when available
-- pond type/system
-- notes
+User can eventually:
+- create/edit pond
+- view active cycle
+- view historical cycles
 
 ### 7.3 Production Cycle
 
-User can create a new production cycle for a pond.
+Minimum lifecycle:
+- `PLANNED`
+- `ACTIVE`
+- `HARVESTING`
+- `COMPLETED`
+- `CANCELLED`
 
-Minimum fields:
-- pond
-- species
-- stocking date
-- stocking quantity
-- seed average weight or size when available
-- seed unit cost / total seed cost
-- target harvest date
-- target harvest weight
-- target SR
-- target FCR
-- target HPP
-- target selling price
-
-Status:
-- PLANNED
-- ACTIVE
-- HARVESTING
-- COMPLETED
-- CANCELLED
-
-A pond cannot have more than one ACTIVE cycle in MVP.
+A pond cannot have conflicting active/harvesting cycles.
 
 ### 7.4 Daily Input
 
-Fast input screen for an active cycle.
-
-MVP records:
-- feed quantity
-- mortality count
-- medicine/probiotic cost or treatment
-- operational expense
-- note
-
-User may record multiple events per day. The system aggregates them automatically.
+Fast input:
+- feed
+- mortality
+- additional production expense
+- notes
 
 ### 7.5 Sampling & Growth
 
-User can record sampling event:
-- date
-- number of sampled fish
-- total sample weight or average weight
-- optional length
-- note
-
-System calculates:
-- ABW
-- estimated live population
-- estimated biomass
-- growth trend
-- latest cycle biomass estimate
-
-### 7.6 Expenses & Costing
-
-Expense categories:
-- seed
-- feed
-- medicine
-- probiotic
-- electricity
-- water
-- labor
-- maintenance
-- transport
-- other
-
-Every expense must be attributable to a cycle where relevant.
-
-System calculates:
-- cumulative production cost
-- feed cost share
-- estimated HPP
-- actual HPP after harvest
-
-### 7.7 Harvest & Sales
-
-Supports partial and final harvest.
-
-Fields:
-- harvest date
-- harvested fish count if known
-- harvest weight
-- selling price per kg
-- buyer/customer optional
-- additional harvest cost optional
+Records:
+- sample count
+- total sample weight and/or ABW
+- optional average length
+- optional observed population
 - notes
 
-System calculates:
-- revenue
-- cumulative harvested weight
-- realized average selling price
-- profit
-- margin
-- final FCR
-- final SR when valid population data is available
+Calculates:
+- ABW
+- growth
+- ADG
+- estimated population
+- estimated biomass
+- FCR
 
-Final harvest can close the cycle.
+### 7.6 Production Expenses & Costing
 
-### 7.8 Decision Engine / Alerts
+Canonical production-cost ledger: `Expense`.
 
-V1 is deterministic and rules-based.
+Cost categories include seed, feed, medicine, probiotic, electricity, water, labor, maintenance, transport, harvest, and other production costs.
 
-Examples:
-- mortality spike
+### 7.7 Harvest
+
+Harvest is a **production event**, not a CRM order.
+
+Supports:
+- partial harvest
+- final harvest
+- fish count when known
+- weight kg
+- harvest cost
+- notes
+
+V0.8 temporarily retains previous Harvest commercial snapshot fields for compatibility until runtime validation and migration planning are complete.
+
+Each new Harvest must create a HarvestLot.
+
+### 7.8 Decision Engine
+
+Rules-based and explainable.
+
+Current rules include:
+- stale sampling
+- missing initial biomass
 - FCR above target
-- growth below target
-- HPP above target
-- projected margin below threshold
-- missing sampling data
-- harvest target approaching
+- SR below target
+- harvest date near
 
-Each alert must include:
-- severity
-- metric/value
-- threshold/target
-- reason
-- recommended check/action
+Alerts must show reason and recommended check/action.
 
-## 8. Key User Flows
+## 8. Sales CRM Modules
 
-### Flow A — Start First Cycle
-1. Register/login
-2. Create farm profile
-3. Create pond
-4. Create cycle
-5. Enter stocking data
-6. Dashboard shows active cycle
+### 8.1 Sales Dashboard
 
-### Flow B — Daily Operation
-1. Open app
-2. Select active pond
-3. Tap Input
-4. Record feed/mortality/cost/note
-5. Save
-6. KPI and alerts refresh
+Must be separate from production dashboard.
 
-### Flow C — Weekly Sampling
-1. Select pond
-2. Add sampling
-3. Enter sample count and weight
-4. Save
-5. System updates ABW, biomass, growth curve, FCR projection
+Initial KPIs:
+- open leads
+- pipeline value
+- confirmed order kg
+- confirmed order value
+- allocated kg
+- available harvested kg
+- outstanding receivables
+- cash collected this month
 
-### Flow D — Harvest
-1. Select cycle
-2. Add harvest
-3. Enter weight and price
-4. Save
-5. System updates revenue/profit
-6. If final harvest, complete cycle and freeze final KPI summary
+### 8.2 Leads
 
-## 9. Functional Requirements
+User can record:
+- lead title
+- source
+- contact
+- species/product interest optional
+- expected demand kg
+- expected price/kg
+- next follow-up
+- notes
 
-### FR-01 Authentication
-User must be authenticated to access farm data.
+Lead lifecycle:
 
-### FR-02 Farm Isolation
-All records must belong to a farm/user scope.
+```text
+NEW → CONTACTED → QUALIFIED → CONVERTED
+                         ↘ LOST
+```
 
-### FR-03 Pond Lifecycle
-A user can create, edit, list, and archive ponds.
+### 8.3 Customers
 
-### FR-04 Cycle Lifecycle
-A user can plan, activate, harvest, and complete a cycle.
+User can record customer/account information:
+- name
+- customer type
+- contact person
+- WhatsApp/phone/email
+- address
+- notes
 
-### FR-05 Operational Logs
-A user can create timestamped feeding, mortality, treatment, and note records.
+### 8.4 Opportunities
 
-### FR-06 Sampling
-A user can create sampling records and see derived biological metrics.
+Qualified commercial pipeline.
 
-### FR-07 Financial Logs
-A user can record expenses and see cumulative cost.
+Stores:
+- customer
+- optional originating lead
+- expected qty
+- expected price
+- expected close date
+- species/product interest
 
-### FR-08 Harvest
-A user can record one or more harvest events.
+Dedicated UI is pending after V0.8 validation.
 
-### FR-09 KPI Recalculation
-Relevant cycle KPIs update after dependent records change.
+### 8.5 Customer Interaction
 
-### FR-10 Alerts
-The system evaluates rules after meaningful events and exposes active alerts.
+Commercial activity history:
+- WhatsApp
+- call
+- meeting
+- email
+- note
 
-### FR-11 History
-Completed cycles remain available for comparison.
+Must reference at least one CRM object: Customer, Lead, or Opportunity.
 
-### FR-12 Traceability
-Derived KPIs must be traceable to source records.
+### 8.6 Sales Orders
 
-## 10. Non-Functional Requirements
+Basic V0.8 flow supports one product line per new order UI; data model supports multiple items.
 
-### Performance
-- common dashboard should load quickly on typical mobile connections
-- daily save action should feel immediate
+Order fields:
+- customer
+- species/product
+- quantity kg
+- agreed price/kg
+- requested delivery date
+- payment terms
+- notes
 
-### Usability
-- primary daily input must be one-hand mobile friendly
-- Indonesian is the default language in MVP
-- numbers and currency use Indonesian formatting
+Lifecycle:
+- DRAFT
+- CONFIRMED
+- PARTIALLY_FULFILLED
+- FULFILLED
+- CANCELLED
+
+### 8.7 Harvest Inventory
+
+HarvestLot is generated from Harvest.
+
+```text
+available kg = lot kg - active allocations
+```
+
+No unrelated manual inventory balance should be maintained.
+
+### 8.8 Fulfillment
+
+User selects:
+- unfulfilled SalesOrderItem
+- available HarvestLot
+- allocation kg
+
+Server must reject:
+- different farms
+- different species
+- allocation above remaining order
+- allocation above available lot
+
+### 8.9 Delivery
+
+Database model exists in V0.8.
+
+Future write UI must support:
+- planned shipment
+- dispatched
+- delivered
+- cancelled
+- delivered item quantity
+
+### 8.10 Invoice
+
+Database model exists in V0.8.
+
+Invoice stores billing snapshot and status:
+- DRAFT
+- ISSUED
+- PARTIALLY_PAID
+- PAID
+- VOID
+
+### 8.11 Payment
+
+Database model exists in V0.8.
+
+Supports multiple payments per invoice for DP/partial/final settlement.
+
+## 9. Key Production User Flows
+
+### Daily Operation
+
+```text
+Dashboard
+→ Pond
+→ Daily Input
+→ Save raw records
+→ KPI recalculation
+→ Decision Engine
+→ Dashboard updated
+```
+
+### Sampling
+
+```text
+Pond
+→ Sampling
+→ Save sample
+→ ABW / Growth / Biomass / FCR updated
+→ Alerts reevaluated
+```
+
+### Harvest
+
+```text
+Pond/Cycle
+→ Partial or Final Harvest
+→ Harvest saved
+→ HarvestLot created
+→ production results updated
+→ Sales fulfillment inventory becomes available
+```
+
+## 10. Key Sales User Flows
+
+### Lead Before Harvest
+
+```text
+Lead arrives
+→ record Lead
+→ follow-up
+→ qualify demand
+→ create Customer/Opportunity
+```
+
+No harvest is required.
+
+### Order Before Harvest
+
+```text
+Customer confirms 100 kg Nila
+→ SalesOrder CONFIRMED
+→ no HarvestLot available yet
+→ order remains open
+```
+
+This is valid behavior.
+
+### Fulfillment After Harvest
+
+```text
+Harvest recorded
+→ HarvestLot appears
+→ select Order Item
+→ allocate HarvestLot quantity
+→ allocated/available kg recalculated
+```
+
+### Commercial Collection
+
+Future complete flow:
+
+```text
+Delivery
+→ Invoice
+→ DP / Partial Payment
+→ Final Payment
+→ customer transaction history
+```
+
+## 11. Functional Requirements
+
+### Production
+- FR-P01 Farm-scoped records
+- FR-P02 Pond/cycle lifecycle
+- FR-P03 Operational logs
+- FR-P04 Sampling
+- FR-P05 Production Expense ledger
+- FR-P06 Harvest
+- FR-P07 KPI recalculation
+- FR-P08 Decision alerts
+- FR-P09 production history
+- FR-P10 KPI traceability
+
+### Sales CRM
+- FR-S01 Sales dashboard separated from production dashboard
+- FR-S02 Lead recording without production dependency
+- FR-S03 Customer recording
+- FR-S04 Opportunity model
+- FR-S05 SalesOrder before inventory availability
+- FR-S06 Harvest creates HarvestLot
+- FR-S07 allocation enforces farm/species/quantity integrity
+- FR-S08 Delivery model
+- FR-S09 Invoice snapshot
+- FR-S10 multiple Payments per Invoice
+- FR-S11 commercial transactions must not mutate biological KPI formulas
+
+## 12. Non-Functional Requirements
+
+### Mobile Usability
+Production daily input and CRM follow-up screens must work well on phone.
 
 ### Reliability
-- duplicate save protection
 - server-side validation
-- safe database migrations
-
-### Security
-- authenticated access
-- server-side authorization
-- secrets never stored in frontend bundle
+- database constraints
+- transactional Harvest + HarvestLot creation
+- transactional allocation validation
+- deterministic development seed
 
 ### Maintainability
-- TypeScript
-- modular domain services
-- automated tests for formulas
-- documented migrations and KPI definitions
+- modular application services
+- clear production vs CRM namespaces
+- documented source-of-truth rules
+- migration history before shared deployment
 
-## 11. Success Metrics for MVP
+### Security
+- server-side authorization when auth is enabled
+- no secrets in client bundle
+- farm isolation
 
-Product success is not measured by number of screens.
+## 13. Source-of-Truth Rules
 
-Initial indicators:
-- ≥ 90% of farm activity for a cycle can be captured in-app
-- daily input median completion time < 60 seconds
-- zero manual spreadsheet calculations needed for core KPIs
-- completed cycle has final cost, HPP, revenue, profit, SR, and FCR where source data permits
-- alerts can be explained from visible source metrics
+### Production
+- biological facts: production raw logs
+- production costs: Expense
+- KPIs: calculated from production raw data
 
-## 12. MVP Acceptance Scenario
+### Sales
+- pipeline: Lead/Opportunity
+- customer commitment: SalesOrderItem
+- sellable harvest stock: HarvestLot
+- stock commitment: FulfillmentAllocation
+- billing: Invoice
+- collection: Payment
 
-A user creates `KLM-001`, starts a Nila cycle with 3,000 fish, records daily feed/mortality/expenses, performs weekly sampling, and finishes harvest at 810 kg.
+### Transition Warning
 
-Without external calculation, the app must be able to show:
-- current/final estimated population
-- SR
-- mortality
-- cumulative feed
-- FCR
-- latest ABW
-- biomass
-- total cost
-- HPP/kg
-- revenue
-- net profit
-- margin
-- cycle duration
-- target vs actual status
-- alerts generated during the cycle
+Until legacy Harvest commercial fields are migrated, reporting must not sum Harvest revenue and Invoice revenue together as if they are independent sales.
 
-## 13. Post-MVP Candidates
+## 14. V0.8 Acceptance Scenario
 
-- feed inventory
+After local validation, the following must work:
+
+```text
+1. Open Sales Dashboard.
+2. Seeded Hotel lead exists with no production allocation.
+3. SO-DEV-001 exists for 100 kg Nila while HarvestLot stock may be zero.
+4. Record a new Harvest from production.
+5. A HarvestLot is created automatically.
+6. Open Fulfillment.
+7. Allocate part/all of the lot to the order.
+8. Order allocation and lot available kg update correctly.
+9. Seeded INV-DEV-001 and Rp500.000 DP produce correct receivable balance.
+10. Production SR/FCR/biomass are unchanged by CRM activity.
+```
+
+## 15. Validation Gate
+
+Runtime validation remains deferred until a local development machine is available.
+
+Required commands:
+
+```powershell
+npm run db:bootstrap
+npm run typecheck
+npm run build
+npm run dev
+```
+
+V0.8 cannot be called runtime-stable before this gate passes.
+
+## 16. Future Candidates
+
+Production:
+- water quality
+- feed inventory/procurement
 - supplier management
-- water quality logs
-- pH / DO / temperature tracking
-- Telegram alerts
-- photo attachments
-- offline sync
-- multi-user roles
-- multi-farm support
-- cycle benchmarking
-- AI narrative summaries
-- harvest prediction model
-- IoT integrations
+- offline field sync
+- multi-user authorization
+- cycle comparison
+
+Commercial:
+- Opportunity UI
+- lead conversion
+- interaction timeline
+- delivery write flow
+- invoice generation
+- payment write flow
+- receivable aging
+- repeat-order reminders
+- price history per customer
+- customer profitability
+- sales forecast vs projected harvest
+
+Later data-maturity layer:
+- AI production summary
+- AI CRM summary
+- predictive harvest planning
+- demand forecasting
+- IoT integration
