@@ -1,171 +1,288 @@
 # Database Schema — FishFarm Management
 
-Version: 0.2
+Version: 0.8
 
 ## 1. Decision
 
-V1 uses **PostgreSQL + Prisma ORM**. The database is the source of truth; spreadsheets are not used as application storage.
+V1 uses **PostgreSQL + Prisma ORM**. PostgreSQL is the application source of truth.
 
-The central aggregate remains `ProductionCycle`. Operational, biological, and financial records attach to a cycle whenever possible.
+The database now contains two bounded areas:
 
-## 2. Source-of-truth model
+- Production / aquaculture
+- Sales CRM / commercial
 
-Raw facts are stored; cumulative and ratio values are derived.
+They share `Farm` and `Species`, but do not share production internals directly.
 
-- stock quantity → `Stocking`
-- feed quantity → `FeedingLog`
-- dead fish → `MortalityLog`
-- sampled weight → `SamplingLog`
+## 2. Production Source-of-Truth
+
+Raw facts remain authoritative:
+
+- stocked fish → `Stocking`
+- feed → `FeedingLog`
+- mortality → `MortalityLog`
+- biological sample → `SamplingLog`
 - treatment → `TreatmentLog`
-- canonical cost transaction → `Expense`
-- harvest weight and sale price → `Harvest`
-- calculated state → `KpiSnapshot`
+- production cost → `Expense`
+- biological harvest → `Harvest`
+- calculated audit/cache → `KpiSnapshot`
 - decision output → `Alert`
 
-`KpiSnapshot` is a cache/audit snapshot, never the authoritative replacement for raw logs.
+`Expense` remains the canonical production-cost ledger.
 
-## 3. Main relationship
+## 3. Sales CRM Source-of-Truth
+
+Commercial facts:
+
+- account → `Customer`
+- incoming prospect → `Lead`
+- qualified pipeline → `SalesOpportunity`
+- CRM touch/follow-up → `CustomerInteraction`
+- customer commitment → `SalesOrder` + `SalesOrderItem`
+- sellable harvest inventory → `HarvestLot`
+- production-to-order link → `FulfillmentAllocation`
+- shipment → `Delivery` + `DeliveryItem`
+- billing → `Invoice`
+- collection → `Payment`
+
+## 4. Boundary Relationship
+
+```text
+PRODUCTION
+ProductionCycle
+      ↓
+   Harvest
+      ↓
+ HarvestLot
+      ↓
+FulfillmentAllocation
+      ↑
+SalesOrderItem
+      ↑
+ SalesOrder
+      ↑
+  Customer
+SALES CRM
+```
+
+`Customer`, `Lead`, `SalesOpportunity`, and `SalesOrder` do **not** contain `pond_id` or `cycle_id`.
+
+This is intentional.
+
+## 5. Main Relationships
 
 ```text
 User ---< FarmMembership >--- Farm
                               |
-                              +---< Pond
-                              |      |
-                              |      +---< ProductionCycle >--- Species
-                              |                 |
-                              |                 +---< Stocking
-                              |                 +---< FeedingLog >--- FeedType
-                              |                 +---< MortalityLog
-                              |                 +---< SamplingLog
-                              |                 +---< TreatmentLog
-                              |                 +---< Expense
-                              |                 +---< Harvest
-                              |                 +---< KpiSnapshot
-                              |                 +---< Alert
+                              +--- Production domain
+                              |      +--- Pond
+                              |      |     +--- ProductionCycle
+                              |      |            +--- Stocking
+                              |      |            +--- FeedingLog
+                              |      |            +--- MortalityLog
+                              |      |            +--- SamplingLog
+                              |      |            +--- TreatmentLog
+                              |      |            +--- Expense
+                              |      |            +--- Harvest --- HarvestLot
+                              |      |            +--- KpiSnapshot
+                              |      |            +--- Alert
+                              |      +--- FeedType
                               |
-                              +---< Expense (shared farm costs)
+                              +--- Sales domain
+                                     +--- Customer
+                                     +--- Lead
+                                     +--- SalesOpportunity
+                                     +--- CustomerInteraction
+                                     +--- SalesOrder
+                                            +--- SalesOrderItem
+                                                   +--- FulfillmentAllocation --- HarvestLot
+                                            +--- Delivery
+                                            +--- Invoice
+                                                   +--- Payment
 ```
 
-## 4. Canonical financial rule
+## 6. Harvest vs HarvestLot
 
-`Expense` is the canonical ledger for production cost.
+`Harvest` is the biological/production event.
 
-Operational events may carry a cost snapshot for traceability, but the application service must create at most one linked `Expense` using:
+`HarvestLot` is the commercial inventory representation of that harvest.
 
-- `source_type`
-- `source_id`
-
-This prevents a feeding event from being counted once from `FeedingLog` and again from a manually duplicated expense.
-
-Examples:
+Current relation:
 
 ```text
-FeedingLog FL-123
-quantity = 18 kg
-unit_cost = 12,000
-
-Expense EXP-987
-source_type = FEEDING
-source_id   = FL-123
-amount      = 216,000
-category    = FEED
+Harvest 1 — 0..1 HarvestLot
 ```
 
-KPI costing reads `Expense`, not both tables.
+Newly recorded harvests create a HarvestLot automatically in the same application transaction.
 
-## 5. Precision
+HarvestLot fields:
+- farm id
+- harvest id unique
+- species id
+- lot code
+- quantity kg
+- optional quality grade
+- notes
+
+Available kg is derived from active allocations.
+
+## 7. Fulfillment Integrity
+
+The application validates before allocation:
+
+```text
+order farm == harvest lot farm
+order species == harvest lot species
+allocated kg <= order remaining kg
+allocated kg <= lot available kg
+```
+
+Cross-row balance rules cannot be represented safely as simple CHECK constraints, so they live in the transactional application service.
+
+The DB still enforces `allocated_kg > 0`.
+
+## 8. Sales Order Semantics
+
+SalesOrder can be created even when no HarvestLot exists.
+
+A SalesOrderItem stores:
+- species
+- requested quantity kg
+- unit price/kg
+
+It does not store a production source.
+
+Physical source is only added through FulfillmentAllocation.
+
+## 9. Invoice & Payment Semantics
+
+Invoice stores a financial snapshot:
+
+```text
+subtotal_amount
+adjustment_amount
+total_amount
+```
+
+Outstanding receivable is derived:
+
+```text
+outstanding = invoice total - sum(payments)
+```
+
+Multiple payments allow DP/partial settlement.
+
+## 10. Transitional Harvest Fields
+
+Before V0.8, Harvest stored:
+- buyer name
+- selling price/kg
+- revenue amount
+
+These fields remain in the executable Prisma schema for backwards compatibility until runtime validation and an explicit migration decision.
+
+Do not use both Harvest revenue and CRM Invoice revenue as one combined sales total without defining the source-of-truth transition. That would double count commercial value.
+
+## 11. Precision
 
 Recommended PostgreSQL types:
 
 - IDs: UUID
 - money: `numeric(18,2)`
-- kg: `numeric(14,3)`
+- kilograms: `numeric(14,3)`
 - grams/cm: `numeric(12,3)`
-- percentage: `numeric(7,4)`
+- percentages: `numeric(7,4)`
 - FCR: `numeric(8,4)`
 - timestamps: `timestamptz`
-- domain dates: `date`
+- business/domain dates: `date`
 
-Application code must not rely on binary floating-point for authoritative money calculations.
+Application code must not use binary floating point as the authoritative persisted money representation.
 
-## 6. Important constraints
+## 12. Database Constraints
 
-### One active cycle per pond
+The bootstrap applies additional PostgreSQL constraints after `prisma db push`.
 
-Prisma does not express a partial unique index directly. The first real migration should add:
+### Production
 
-```sql
-CREATE UNIQUE INDEX production_cycle_one_open_cycle_per_pond
-ON production_cycles (pond_id)
-WHERE status IN ('ACTIVE', 'HARVESTING');
-```
+- only one ACTIVE/HARVESTING cycle per pond
+- sampling weight required
+- positive stocking quantity
+- positive feed quantity
+- positive mortality quantity
+- positive sample count
+- non-negative expense amount
+- positive harvest weight
+- non-negative legacy harvest selling price
 
-### Sampling input
+### Sales CRM
 
-At least one of `total_sample_weight_kg` or `average_weight_g` must exist. Enforce in the service layer and preferably with a migration-level check constraint.
+- Lead expected demand > 0 when present
+- Lead expected price > 0 when present
+- Opportunity quantity > 0 when present
+- Opportunity price > 0 when present
+- CustomerInteraction must reference a customer, lead, or opportunity
+- SalesOrderItem quantity > 0
+- SalesOrderItem price > 0
+- HarvestLot quantity > 0
+- FulfillmentAllocation quantity > 0
+- DeliveryItem quantity > 0
+- Invoice subtotal/total non-negative
+- Payment amount > 0
 
-```sql
-ALTER TABLE sampling_logs
-ADD CONSTRAINT sampling_weight_required
-CHECK (
-  total_sample_weight_kg IS NOT NULL
-  OR average_weight_g IS NOT NULL
-);
-```
-
-### Positive quantities
-
-Service validation must reject zero/negative values for stocking quantity, feed quantity, mortality quantity, sample count, harvest weight, and expense amount.
-
-## 7. Population semantics
-
-Exact live population can only be derived when fish counts are known.
-
-```text
-estimated_population =
-  stocked fish
-  - recorded mortality
-  - harvested fish count (when known)
-```
-
-If a partial harvest has weight but no fish count, the dashboard must label population and survival values as **estimated** rather than exact.
-
-## 8. Biomass semantics
-
-Standing biomass:
+Executable constraints live in:
 
 ```text
-latest reliable ABW × estimated live population
+scripts/apply-db-constraints.ts
 ```
 
-Harvested biomass remains separate. Do not subtract harvest weight from the latest standing biomass unless the calculation context explicitly requires it.
+## 13. Canonical Production Cost Rule
 
-## 9. FCR basis
+Operational events may create one linked Expense using:
 
-Cycle FCR should use cumulative feed divided by biological biomass gain, with harvested biomass included when partial harvests have occurred.
+```text
+source_type
+source_id
+```
 
-The exact formula/version is documented in `KPI_MODEL.md` and must be versioned when calculation behavior changes.
+Example:
 
-## 10. Audit rules
+```text
+FeedingLog FL-123
+18 kg × Rp12.000
 
-All mutable transaction tables include timestamps. Completed cycles should not allow destructive edits without an explicit correction flow.
+Expense EXP-987
+source_type = FEEDING
+source_id   = FL-123
+amount      = Rp216.000
+```
 
-Later audit extensions can add:
+KPI costing reads Expense only.
 
-- `updated_by`
-- correction reason
-- revision history
-- soft-delete metadata
+CRM invoices/payments are **not production costs**.
 
-## 11. Prisma schema
+## 14. Prisma Schema
 
-The executable model lives in [`../prisma/schema.prisma`](../prisma/schema.prisma).
+Executable schema:
 
-Before the first database migration:
+[`../prisma/schema.prisma`](../prisma/schema.prisma)
 
-1. review schema with real farm assumptions,
-2. configure `DATABASE_URL`,
-3. run Prisma generation,
-4. create migration with `--create-only`,
-5. add the custom SQL constraints above,
-6. apply migration to a development database.
+Sales CRM reference:
+
+[`SALES_CRM.md`](SALES_CRM.md)
+
+## 15. Migration Strategy
+
+The repository is still in a rapid local-development schema phase and uses `prisma db push` for bootstrap.
+
+Before shared staging/production:
+
+1. validate V0.8 locally,
+2. reset a disposable development DB,
+3. generate the initial migration with `--create-only`,
+4. merge PostgreSQL-specific constraints into migration SQL,
+5. validate migration on a clean DB,
+6. review legacy Harvest commercial fields,
+7. define CRM commercial source-of-truth migration,
+8. commit migration history,
+9. stop using `db push` for shared environments.
+
+No production environment should use local development credentials or the Docker development volume.
