@@ -21,12 +21,12 @@ function parseOptionalNumber(formData: FormData, key: string): number | undefine
 }
 
 function parseHarvestType(value: string): HarvestType {
-  if (value === HarvestType.FINAL) return HarvestType.FINAL;
-  return HarvestType.PARTIAL;
+  return value === HarvestType.FINAL ? HarvestType.FINAL : HarvestType.PARTIAL;
 }
 
 export async function submitHarvest(formData: FormData): Promise<void> {
   let cycleId = "";
+  let pondCode = "";
 
   try {
     cycleId = String(formData.get("cycleId") ?? "").trim();
@@ -53,14 +53,16 @@ export async function submitHarvest(formData: FormData): Promise<void> {
       notes,
     });
 
+    pondCode = result.pondCode;
+
     revalidatePath("/");
     revalidatePath("/harvest");
     revalidatePath(`/ponds/${result.pondCode}`);
-
-    redirect(`/ponds/${encodeURIComponent(result.pondCode)}?harvestSaved=1`);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal menyimpan panen";
     const cycleQuery = cycleId ? `&cycleId=${encodeURIComponent(cycleId)}` : "";
     redirect(`/harvest?error=${encodeURIComponent(message)}${cycleQuery}`);
   }
+
+  redirect(`/ponds/${encodeURIComponent(pondCode)}?harvestSaved=1`);
 }
