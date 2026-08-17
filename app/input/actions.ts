@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ExpenseCategory } from "@/src/generated/prisma/client";
 import { recordDailyInput } from "@/src/application/daily-input/record-daily-input";
+import { evaluateCycleAlerts } from "@/src/application/decision/evaluate-cycle-alerts";
 
 function parseNumber(formData: FormData, key: string): number {
   const raw = String(formData.get(key) ?? "").trim();
@@ -30,8 +31,10 @@ function parseExpenseCategory(value: string): ExpenseCategory {
 }
 
 export async function submitDailyInput(formData: FormData): Promise<void> {
+  let cycleId = "";
+
   try {
-    const cycleId = String(formData.get("cycleId") ?? "").trim();
+    cycleId = String(formData.get("cycleId") ?? "").trim();
     const eventDate = String(formData.get("eventDate") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim();
 
@@ -52,12 +55,19 @@ export async function submitDailyInput(formData: FormData): Promise<void> {
       notes,
     });
 
+    try {
+      await evaluateCycleAlerts(cycleId);
+    } catch (decisionError) {
+      console.error("Decision Engine evaluation failed after daily input", decisionError);
+    }
+
     revalidatePath("/");
     revalidatePath("/input");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal menyimpan input harian";
-    redirect(`/input?error=${encodeURIComponent(message)}`);
+    const cycleQuery = cycleId ? `&cycleId=${encodeURIComponent(cycleId)}` : "";
+    redirect(`/input?error=${encodeURIComponent(message)}${cycleQuery}`);
   }
 
-  redirect("/input?saved=1");
+  redirect(`/input?saved=1${cycleId ? `&cycleId=${encodeURIComponent(cycleId)}` : ""}`);
 }
