@@ -13,6 +13,7 @@ button, select { cursor: pointer; }
 .shell { width: min(100% - 28px, 920px); margin: 0 auto; padding: 28px 0 48px; }
 .formShell { width: min(100% - 28px, 760px); }
 .detailShell { width: min(100% - 28px, 1040px); }
+.salesShell { width: min(100% - 28px, 1100px); }
 .hero { padding: 28px; border-radius: 28px; color: white; background: linear-gradient(135deg, #057d86, #06a49b); box-shadow: 0 18px 44px rgba(10, 82, 88, .18); }
 .hero h1 { margin: 6px 0 8px; font-size: clamp(2rem, 7vw, 3.25rem); }
 .hero p { margin-bottom: 0; opacity: .9; }
@@ -102,6 +103,28 @@ button, select { cursor: pointer; }
 .alertCard span { color: #42705a; font-size: .76rem; }
 .alertDanger { border-color: #f2cece; background: #fff3f3; }
 .alertDanger span { color: #8c4545; }
+
+.salesHero { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; padding: 26px; color: white; border-radius: 26px; background: linear-gradient(135deg, #085b67, #078f86); box-shadow: 0 16px 38px rgba(10,82,88,.16); }
+.salesHero h1 { margin: 6px 0; font-size: clamp(2rem, 7vw, 3rem); }
+.salesHero p:last-child { margin: 0; max-width: 680px; opacity: .9; line-height: 1.5; }
+.salesNav { display: flex; gap: 8px; overflow-x: auto; margin: 14px 0 2px; padding: 2px 0 6px; scrollbar-width: none; }
+.salesNav::-webkit-scrollbar { display: none; }
+.salesNav a { flex: 0 0 auto; padding: 9px 12px; border: 1px solid #cfe3e3; border-radius: 999px; background: rgba(255,255,255,.86); color: #23656b; font-size: .78rem; font-weight: 800; text-decoration: none; }
+.salesMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.salesWorkspace { align-items: start; }
+.crmList { display: grid; margin-top: 14px; }
+.crmRow { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 13px 0; border-top: 1px solid #e9efef; }
+.crmRow:first-child { border-top: 0; }
+.crmRow > div:first-child { min-width: 0; }
+.crmRow strong { display: block; font-size: .88rem; overflow-wrap: anywhere; }
+.crmRow span { display: block; margin-top: 4px; color: #687d81; font-size: .76rem; line-height: 1.35; }
+.crmRowRight { flex: 0 0 auto; display: grid; justify-items: end; gap: 5px; text-align: right; }
+.crmRowRight small { color: #7a8b8e; font-size: .68rem; }
+.crmRowRight > strong { font-size: .78rem; }
+.crmOrderRow { padding: 15px 0; }
+.sectionLabel { margin: 20px 0 4px; color: #4c666b; font-size: .76rem; letter-spacing: .06em; text-transform: uppercase; }
+.compactCrmList { margin-top: 4px; }
+
 footer { color: #70858a; text-align: center; font-size: .8rem; padding: 24px 8px 0; }
 
 @media (min-width: 620px) {
@@ -114,11 +137,12 @@ footer { color: #70858a; text-align: center; font-size: .8rem; padding: 24px 8px
   .kpis { grid-template-columns: repeat(4, 1fr); }
   .detailGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .compactGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .salesMetrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 @media (max-width: 650px) {
-  .detailHero { display: block; padding: 22px; }
-  .detailHero .heroActions { justify-content: flex-start; margin-top: 16px; }
+  .detailHero, .salesHero { display: block; padding: 22px; }
+  .detailHero .heroActions, .salesHero .heroActions { justify-content: flex-start; margin-top: 16px; }
   .growthRow { grid-template-columns: 92px minmax(70px, 1fr); }
   .growthDelta { grid-column: 1 / -1; display: flex; justify-content: space-between; text-align: left; }
 }
@@ -129,4 +153,6 @@ footer { color: #70858a; text-align: center; font-size: .8rem; padding: 24px 8px
   .heroActions { justify-content: flex-start; margin-top: 14px; }
   .pondRow { align-items: flex-start; flex-direction: column; }
   .panelTitle { align-items: flex-start; }
+  .crmRow { flex-direction: column; }
+  .crmRowRight { justify-items: start; text-align: left; }
 }
