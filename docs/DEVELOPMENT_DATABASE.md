@@ -1,21 +1,26 @@
 # Development Database — FishFarm Management
 
-Version: 0.7
+Version: 0.8
 
 ## Goal
 
-Provide a repeatable local PostgreSQL development environment with realistic FishFarm seed data, database-level domain constraints, live Decision Engine evaluation, and a simple health check.
+Provide a repeatable local PostgreSQL development environment containing both:
+
+- aquaculture production data,
+- Sales CRM development data,
+
+plus database constraints and live Decision Engine evaluation.
 
 ## Stack
 
 - PostgreSQL 17 via Docker Compose
 - Prisma ORM 7
 - PostgreSQL driver adapter (`@prisma/adapter-pg`)
-- TypeScript seed, constraint, and Decision Engine scripts via `tsx`
+- TypeScript seed/constraint/Decision scripts via `tsx`
 
 ## First-time setup on Windows / PowerShell
 
-From the repository root:
+From repository root:
 
 ```powershell
 Copy-Item .env.example .env
@@ -23,25 +28,25 @@ npm install
 ./scripts/dev-db.ps1
 ```
 
-The helper script calls `npm run db:bootstrap`, which:
+The helper calls `npm run db:bootstrap`:
 
-1. starts PostgreSQL and waits until healthy,
-2. generates Prisma Client,
-3. pushes the Prisma schema,
-4. applies PostgreSQL-specific constraints,
-5. seeds deterministic development raw data,
-6. removes legacy static development alerts,
-7. runs the live Decision Engine for every active cycle.
+1. start PostgreSQL and wait until healthy,
+2. generate Prisma Client,
+3. push Prisma schema,
+4. apply PostgreSQL-specific constraints,
+5. run production seed,
+6. complete KLM-002 finance ledger seed,
+7. run Sales CRM seed,
+8. remove legacy static development alerts,
+9. run live Decision Engine for active cycles.
 
-Equivalent manual command after dependencies and `.env` exist:
+Equivalent:
 
 ```powershell
 npm run db:bootstrap
 ```
 
 ## Database connection
-
-Default local values:
 
 ```text
 host: localhost
@@ -51,13 +56,11 @@ user: fishfarm
 password: fishfarm_dev
 ```
 
-Connection string:
-
 ```text
 postgresql://fishfarm:fishfarm_dev@localhost:5432/fishfarm_dev?schema=public
 ```
 
-These credentials are for local development only.
+Local development only.
 
 ## Useful commands
 
@@ -71,70 +74,101 @@ npm run db:seed
 npm run decision:evaluate
 npm run db:reset
 npm run prisma:studio
+npm run typecheck
+npm run build
 ```
 
-### `db:up`
-Starts PostgreSQL and waits for the health check.
+## Seed Chain
 
-### `db:down`
-Stops containers but preserves database data in the Docker volume.
+Configured in `prisma.config.ts`:
 
-### `db:destroy`
-Stops containers and deletes the PostgreSQL volume. Use only when you intentionally want a clean database.
+```text
+prisma/seed.ts
+   ↓
+prisma/seed-finance-completion.ts
+   ↓
+prisma/seed-sales.ts
+```
 
-### `decision:evaluate`
-Runs the live rules-based Decision Engine for all `ACTIVE` / `HARVESTING` cycles. It also removes the old `dev-seed-v1` static alerts so development status comes from the same engine used by application writes.
+### Production seed
 
-### `db:reset`
-Recreates the schema, reapplies custom constraints, reseeds raw development data, and reevaluates alerts.
-
-## Development seed
-
-The raw-data seed is deterministic and safe to run repeatedly.
-
-It creates:
-
-- one development owner user,
-- one development farm,
-- Nila master species,
-- two ponds: `KLM-001` and `KLM-002`,
+Creates:
+- one owner user,
+- one farm,
+- Nila species,
+- KLM-001 and KLM-002,
 - two active production cycles,
-- stocking data,
-- feed records,
-- mortality records,
-- growth sampling,
-- treatment and expense records.
+- stocking,
+- feeding,
+- mortality,
+- sampling,
+- treatment and production costs.
 
-Alert state after bootstrap is **not taken from hardcoded seed examples**. `npm run decision:evaluate` creates/updates alerts from current raw data and rule configuration.
+Legacy static development alerts are intentionally removed by `decision:evaluate` after seeding so application state comes from the live rules engine.
 
-### KLM-001 scenario
+### KLM-001
 
-Designed to represent a relatively healthy/on-target pond:
+- stock 3,000 fish
+- mortality 174
+- estimated live fish 2,826
+- latest ABW 270 g
+- estimated biomass about 763 kg
+- cumulative feed 834 kg
+- approximate FCR about 1.14
 
-- initial stock: 3,000 fish
-- recorded mortality: 174 fish
-- estimated live population before harvest: 2,826 fish
-- latest average body weight: 270 g
-- estimated standing biomass: about 763 kg
-- cumulative development feed records: 834 kg
-- approximate biological FCR: 1.14
+### KLM-002
 
-This dataset intentionally resembles the UI reference so frontend integration can be checked against known values.
+- stock 2,500 fish
+- mortality 325
+- estimated SR about 87%
+- latest ABW 210 g
+- cumulative feed 613 kg
+- approximate FCR about 1.42
+- finance-completion seed ensures seed/feed costs exist in canonical Expense ledger
 
-### KLM-002 scenario
+## Sales CRM Seed
 
-Designed to exercise monitoring rules:
+`prisma/seed-sales.ts` intentionally creates commercial demand **without a production allocation**.
 
-- initial stock: 2,500 fish
-- recorded mortality: 325 fish
-- estimated SR: about 87%
-- latest average body weight: 210 g
-- cumulative development feed: 613 kg
-- approximate FCR: about 1.42
+It includes:
 
-The final alert severity is determined by the live Decision Engine configuration, not by a static seed alert.
+- Customer: `RM Sederhana Cianjur`
+- Customer: `Pengepul Nila Cianjur`
+- Lead: `Hotel Cianjur — kebutuhan Nila mingguan`
+- one WhatsApp interaction/follow-up
+- one open Nila opportunity
+- Sales Order: `SO-DEV-001`
+- order quantity: 100 kg
+- order price: Rp23.500/kg
+- Invoice: `INV-DEV-001`
+- invoice total: Rp2.350.000
+- Payment/DP: Rp500.000
+- invoice status: `PARTIALLY_PAID`
+- no FulfillmentAllocation initially
 
-## Decision Engine bootstrap
+The missing allocation is deliberate. It verifies the domain rule:
+
+```text
+Sales order may exist before harvested inventory exists.
+```
+
+When a user later records a Harvest, the Harvest service creates a HarvestLot automatically. That lot becomes visible in `/sales/fulfillment` and can then be allocated to the order.
+
+## HarvestLot Development Behavior
+
+A newly recorded harvest writes both production and inventory facts inside one transaction:
+
+```text
+Harvest
+  +
+HarvestLot
+```
+
+HarvestLot does not duplicate an arbitrary stock input; its `quantity_kg` originates from the Harvest weight.
+
+Available quantity is derived after allocations.
+
+## Decision Engine Bootstrap
 
 Current initial rules:
 
@@ -146,97 +180,110 @@ SR_BELOW_TARGET
 HARVEST_DATE_NEAR
 ```
 
-Default rule values live in:
+Application writes for Daily Input, Sampling, and Harvest also reevaluate the affected cycle.
 
-```text
-src/domain/decision/config.ts
-```
+Sales CRM writes do not execute biological Decision Engine rules.
 
-Application writes for Daily Input, Sampling, and Harvest also reevaluate the affected cycle after the raw transaction succeeds.
+## PostgreSQL-specific Constraints
 
-## PostgreSQL-specific constraints
+Production:
+- one ACTIVE/HARVESTING cycle per pond
+- sampling weight required
+- positive stocking/feed/mortality/sample quantities
+- non-negative Expense
+- positive harvest weight
+- non-negative legacy harvest price
 
-`prisma db push` creates the Prisma-managed schema. The project then runs `scripts/apply-db-constraints.ts` for constraints intentionally kept at database level.
+Sales CRM:
+- positive optional Lead demand/price
+- positive optional Opportunity quantity/price
+- CustomerInteraction must reference a CRM target
+- positive SalesOrderItem quantity and price
+- positive HarvestLot quantity
+- positive FulfillmentAllocation quantity
+- positive DeliveryItem quantity
+- non-negative Invoice subtotal/total
+- positive Payment amount
 
-Current constraints include:
-
-- only one `ACTIVE` or `HARVESTING` cycle per pond,
-- sampling must contain total sample weight or average weight,
-- positive stocking quantity,
-- positive feed quantity,
-- positive mortality quantity,
-- positive sample count,
-- non-negative expenses,
-- positive harvest weight,
-- non-negative selling price.
-
-These rules are also expected to be validated in the application/service layer. Database constraints are the final safety net.
-
-## Health check
-
-After database bootstrap and application start:
-
-```text
-GET /api/health/db
-```
-
-Expected development response:
-
-```json
-{
-  "status": "ok",
-  "database": "connected",
-  "data": {
-    "farms": 1,
-    "ponds": 2,
-    "activeCycles": 2
-  }
-}
-```
+Application services add cross-row transactional rules such as preventing over-allocation of order quantity or harvest inventory.
 
 ## Prisma Studio
-
-Inspect development data visually:
 
 ```powershell
 npm run prisma:studio
 ```
 
-## Runtime validation gate
+Useful tables to inspect for V0.8:
 
-When a local development machine is available, validate V0.7 with:
+```text
+customers
+leads
+sales_opportunities
+customer_interactions
+sales_orders
+sales_order_items
+harvest_lots
+fulfillment_allocations
+invoices
+payments
+```
+
+## Runtime Validation Gate — V0.8
+
+When the laptop is available:
 
 ```powershell
+git pull
+npm install
 npm run db:bootstrap
 npm run typecheck
 npm run build
 npm run dev
 ```
 
-Then verify end-to-end:
+### Production flow
 
 ```text
 Dashboard
 → Daily Input
-→ Decision Engine update
 → Sampling
-→ Growth/FCR recalculation
-→ Partial Harvest
-→ Final Harvest
-→ Completed-cycle Actual HPP / revenue / profit / margin / Final FCR
+→ Pond Detail
+→ Harvest
+→ Decision Engine
 ```
 
-## Migration strategy
+### CRM flow
 
-During the early schema-design phase, local bootstrap uses `prisma db push` so the model can move quickly.
+```text
+/sales
+→ verify seeded CRM KPIs
+→ create Lead
+→ create Customer
+→ create Sales Order
+→ confirm order can exist with 0 HarvestLot
+→ record Harvest
+→ verify HarvestLot appears
+→ /sales/fulfillment
+→ allocate quantity
+→ verify available and allocated kg recalculate
+→ inspect invoice/payment seed balances
+```
 
-Before the schema becomes a shared staging/production contract:
+Also run `db:reset` once to verify deterministic/idempotent seed behavior.
 
-1. reset a clean development database,
-2. generate the initial Prisma migration,
-3. incorporate PostgreSQL-specific constraint SQL into that migration,
-4. validate migration behavior on a disposable database,
-5. commit migration history,
-6. stop relying on `db push` for shared environments.
+## Migration Strategy
 
-No production environment should use the local development credentials or Docker volume as its database.
+Local development still uses `prisma db push` because schema boundaries are actively being developed.
+
+Before staging/production:
+
+1. pass V0.8 runtime validation,
+2. create a clean disposable DB,
+3. generate initial migration with `--create-only`,
+4. merge PostgreSQL-specific constraints into migration SQL,
+5. validate migration on clean DB,
+6. decide transition of legacy Harvest sale fields to CRM source-of-truth,
+7. commit migration history,
+8. stop using `db push` in shared environments.
+
+No production environment should use development credentials or the local Docker volume.
