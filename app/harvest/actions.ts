@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { HarvestType } from "@/src/generated/prisma/client";
 import { recordHarvest } from "@/src/application/harvest/record-harvest";
+import { evaluateCycleAlerts } from "@/src/application/decision/evaluate-cycle-alerts";
 
 function parseRequiredNumber(formData: FormData, key: string, label: string): number {
   const raw = String(formData.get(key) ?? "").trim();
@@ -54,6 +55,12 @@ export async function submitHarvest(formData: FormData): Promise<void> {
     });
 
     pondCode = result.pondCode;
+
+    try {
+      await evaluateCycleAlerts(cycleId);
+    } catch (decisionError) {
+      console.error("Decision Engine evaluation failed after harvest", decisionError);
+    }
 
     revalidatePath("/");
     revalidatePath("/harvest");
