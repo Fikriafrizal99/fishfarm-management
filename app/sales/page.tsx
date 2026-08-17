@@ -68,6 +68,7 @@ export default async function SalesDashboardPage() {
         <Link href="/sales/leads">Leads</Link>
         <Link href="/sales/customers">Customers</Link>
         <Link href="/sales/orders">Orders</Link>
+        <Link href="/sales/fulfillment">Fulfillment</Link>
       </nav>
 
       <section className="metrics salesMetrics" aria-label="Sales summary">
@@ -144,7 +145,7 @@ export default async function SalesDashboardPage() {
             <p className="eyebrow dark">Fulfillment Bridge</p>
             <h2>Harvest inventory</h2>
           </div>
-          <span className="badge good">LOOSELY COUPLED</span>
+          <Link className="textLink" href="/sales/fulfillment">Buka fulfillment →</Link>
         </div>
 
         <p className="metricDisclaimer">
