@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordSampling } from "@/src/application/sampling/record-sampling";
+import { evaluateCycleAlerts } from "@/src/application/decision/evaluate-cycle-alerts";
 
 function parseOptionalNumber(formData: FormData, key: string): number | undefined {
   const raw = String(formData.get(key) ?? "").trim();
@@ -36,6 +37,12 @@ export async function submitSampling(formData: FormData): Promise<void> {
       observedPopulation: parseOptionalNumber(formData, "observedPopulation"),
       notes,
     });
+
+    try {
+      await evaluateCycleAlerts(cycleId);
+    } catch (decisionError) {
+      console.error("Decision Engine evaluation failed after sampling", decisionError);
+    }
 
     revalidatePath("/");
     revalidatePath("/sampling");
