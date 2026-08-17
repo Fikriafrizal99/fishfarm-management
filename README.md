@@ -16,7 +16,7 @@ The mockup above is the initial visual direction for Dashboard, Pond Detail, Dai
 
 ## Current Development Setup
 
-The repository now includes a repeatable local development database:
+The repository includes a repeatable local development database:
 
 - PostgreSQL 17 in Docker Compose
 - Prisma schema and generated-client workflow
@@ -26,18 +26,38 @@ The repository now includes a repeatable local development database:
 - `KLM-002` needs-attention scenario
 - database health endpoint
 
+It also includes the first real application flow:
+
+```text
+Daily Input
+   ↓
+Application Service
+   ↓
+PostgreSQL raw logs + canonical Expense ledger
+   ↓
+Dashboard Application Service
+   ↓
+Calculated SR / mortality / biomass / FCR / cost
+   ↓
+Mobile-first Dashboard
+```
+
+The dashboard no longer falls back to hardcoded farm KPI values when PostgreSQL data is available.
+
 ### Windows / PowerShell bootstrap
 
 ```powershell
 Copy-Item .env.example .env
 npm install
 ./scripts/dev-db.ps1
+npm run dev
 ```
 
 Or, after `.env` and dependencies already exist:
 
 ```powershell
 npm run db:bootstrap
+npm run dev
 ```
 
 Inspect data with:
@@ -46,14 +66,42 @@ Inspect data with:
 npm run prisma:studio
 ```
 
-Full instructions: [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DATABASE.md).
+Full database instructions: [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DATABASE.md).
+
+## Implemented Application Flow — V0.4
+
+### Dashboard
+
+`/` reads active production cycles from PostgreSQL and calculates:
+
+- active pond count
+- estimated active fish population
+- estimated standing biomass
+- running production cost
+- estimated survival rate
+- mortality rate
+- FCR based on biomass gain
+- per-cycle status and open-alert count
+- current cost per estimated standing kg
+
+### Daily Input
+
+`/input` provides a server-backed form for:
+
+- feed quantity
+- mortality quantity
+- additional operating expense
+- expense category
+- operational notes
+
+Feed input creates a linked financial transaction when a feed unit cost exists, preventing feed cost from being counted twice.
 
 ## MVP Modules
 
-1. Dashboard
+1. Dashboard — **in progress / DB-backed**
 2. Pond Management
 3. Production Cycles
-4. Daily Input
+4. Daily Input — **first write flow implemented**
 5. Sampling & Growth
 6. Expenses & Costing
 7. Harvest & Sales
@@ -111,7 +159,7 @@ Full instructions: [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DATABASE.md
 ## Repository Structure
 
 ```text
-app/                    Next.js presentation layer
+app/                    Next.js presentation + server actions
 src/application/        use-case orchestration / transactions
 src/domain/             pure domain rules and KPI calculations
 src/lib/                infrastructure helpers
@@ -132,7 +180,9 @@ The endpoint confirms PostgreSQL connectivity and reports basic development row 
 
 ## Status
 
-**Phase:** Development Database & Backend Foundation  
-**Version:** 0.3  
+**Phase:** Database-backed Dashboard & Daily Operations  
+**Version:** 0.4  
 **Database:** local development bootstrap ready  
-**Application integration:** next milestone
+**Dashboard:** reads raw PostgreSQL data  
+**First write flow:** daily feed / mortality / expense input implemented  
+**Next:** Sampling & Growth write flow, Pond Detail, then live Decision Engine evaluation
