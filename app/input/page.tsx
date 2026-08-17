@@ -50,7 +50,7 @@ export default async function InputPage({
         <div className="notice successNotice">Data harian berhasil disimpan.</div>
       ) : null}
       {params.error ? (
-        <div className="notice errorNotice">{decodeURIComponent(params.error)}</div>
+        <div className="notice errorNotice">{params.error}</div>
       ) : null}
       {databaseError ? (
         <div className="notice errorNotice">
