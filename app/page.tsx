@@ -86,6 +86,7 @@ export default async function Home() {
             <h1>Halo, {ownerFirstName} 👋</h1>
           </div>
           <div className="heroActions">
+            <Link className="secondaryButton lightButton" href="/sales">Sales CRM</Link>
             <Link className="secondaryButton lightButton" href="/sampling">+ Sampling</Link>
             <Link className="heroAction" href="/input">+ Input Harian</Link>
           </div>
@@ -187,7 +188,7 @@ export default async function Home() {
       </section>
 
       <footer>
-        V0.5 · Dashboard, sampling, dan detail kolam membaca raw data PostgreSQL.
+        V0.8 · Dashboard Budidaya dan Sales CRM memakai domain terpisah dalam satu aplikasi.
       </footer>
     </main>
   );
