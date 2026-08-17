@@ -23,6 +23,8 @@ export interface RecordHarvestCommand {
 
 export interface RecordHarvestResult {
   harvestId: string;
+  harvestLotId: string;
+  harvestLotCode: string;
   pondCode: string;
   cycleStatus: CycleStatus;
   cumulativeHarvestWeightKg: number;
@@ -118,6 +120,19 @@ export async function recordHarvest(
       },
     });
 
+    const lotSequence = cycle.harvests.length + 1;
+    const harvestLotCode = `HL-${cycle.cycleCode}-${String(lotSequence).padStart(2, "0")}`;
+    const harvestLot = await tx.harvestLot.create({
+      data: {
+        farmId: cycle.farmId,
+        harvestId: harvest.id,
+        speciesId: cycle.speciesId,
+        lotCode: harvestLotCode,
+        quantityKg: command.weightKg,
+        notes: `Generated from ${command.harvestType.toLowerCase()} harvest ${cycle.pond.code}`,
+      },
+    });
+
     if (harvestCost > 0) {
       await tx.expense.create({
         data: {
@@ -197,6 +212,8 @@ export async function recordHarvest(
 
     return {
       harvestId: harvest.id,
+      harvestLotId: harvestLot.id,
+      harvestLotCode,
       pondCode: cycle.pond.code,
       cycleStatus,
       cumulativeHarvestWeightKg,
