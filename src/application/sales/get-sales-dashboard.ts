@@ -52,10 +52,16 @@ function toNumber(value: unknown): number {
   return value === null || value === undefined ? 0 : Number(value);
 }
 
-function monthRange(now: Date): { start: Date; end: Date } {
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  return { start, end };
+function monthRangeJakarta(now: Date): { start: Date; end: Date } {
+  const jakartaNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const year = jakartaNow.getUTCFullYear();
+  const month = jakartaNow.getUTCMonth();
+  const jakartaOffsetMs = 7 * 60 * 60 * 1000;
+
+  return {
+    start: new Date(Date.UTC(year, month, 1) - jakartaOffsetMs),
+    end: new Date(Date.UTC(year, month + 1, 1) - jakartaOffsetMs),
+  };
 }
 
 export async function getSalesDashboard(
@@ -118,7 +124,7 @@ export async function getSalesDashboard(
       include: { payments: true },
     }),
     (() => {
-      const { start, end } = monthRange(now);
+      const { start, end } = monthRangeJakarta(now);
       return db.payment.findMany({
         where: {
           paidAt: { gte: start, lt: end },
