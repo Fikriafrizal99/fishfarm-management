@@ -73,6 +73,75 @@ enum AlertStatus {
   RESOLVED
 }
 
+enum CustomerType {
+  RESTAURANT
+  WHOLESALER
+  RETAILER
+  MARKET
+  HOTEL
+  CATERING
+  INDIVIDUAL
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum OpportunityStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum InteractionType {
+  WHATSAPP
+  CALL
+  MEETING
+  EMAIL
+  NOTE
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  CONFIRMED
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+}
+
+enum FulfillmentStatus {
+  RESERVED
+  FULFILLED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PLANNED
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  QRIS
+  OTHER
+}
+
 model User {
   id          String           @id @default(uuid()) @db.Uuid
   email       String           @unique
@@ -100,18 +169,26 @@ model FarmMembership {
 }
 
 model Farm {
-  id           String           @id @default(uuid()) @db.Uuid
-  name         String
-  locationText String?          @map("location_text")
-  timezone     String           @default("Asia/Jakarta")
-  currency     String           @default("IDR") @db.VarChar(3)
-  memberships  FarmMembership[]
-  ponds        Pond[]
-  cycles       ProductionCycle[]
-  feedTypes    FeedType[]
-  expenses     Expense[]
-  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id            String                @id @default(uuid()) @db.Uuid
+  name          String
+  locationText  String?               @map("location_text")
+  timezone      String                @default("Asia/Jakarta")
+  currency      String                @default("IDR") @db.VarChar(3)
+  memberships   FarmMembership[]
+  ponds         Pond[]
+  cycles        ProductionCycle[]
+  feedTypes     FeedType[]
+  expenses      Expense[]
+  customers     Customer[]
+  leads         Lead[]
+  opportunities SalesOpportunity[]
+  interactions  CustomerInteraction[]
+  salesOrders   SalesOrder[]
+  harvestLots   HarvestLot[]
+  deliveries    Delivery[]
+  invoices      Invoice[]
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("farms")
 }
@@ -140,13 +217,17 @@ model Pond {
 }
 
 model Species {
-  id             String            @id @default(uuid()) @db.Uuid
-  commonName     String            @unique @map("common_name")
-  scientificName String?           @map("scientific_name")
-  active         Boolean           @default(true)
+  id             String               @id @default(uuid()) @db.Uuid
+  commonName     String               @unique @map("common_name")
+  scientificName String?              @map("scientific_name")
+  active         Boolean              @default(true)
   cycles         ProductionCycle[]
-  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  leads          Lead[]
+  opportunities  SalesOpportunity[]
+  salesOrderItems SalesOrderItem[]
+  harvestLots    HarvestLot[]
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("species")
 }
@@ -340,6 +421,7 @@ model Harvest {
   notes             String?
   createdById       String?         @map("created_by_id") @db.Uuid
   cycle             ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  harvestLot        HarvestLot?
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -394,4 +476,268 @@ model Alert {
   @@index([cycleId, status, severity])
   @@index([ruleCode, triggeredAt])
   @@map("alerts")
+}
+
+model Customer {
+  id            String                @id @default(uuid()) @db.Uuid
+  farmId        String                @map("farm_id") @db.Uuid
+  name          String
+  customerType  CustomerType          @default(OTHER) @map("customer_type")
+  contactPerson String?               @map("contact_person")
+  phone         String?
+  whatsapp      String?
+  email         String?
+  addressText   String?               @map("address_text")
+  notes         String?
+  active        Boolean               @default(true)
+  farm          Farm                  @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  leads         Lead[]
+  opportunities SalesOpportunity[]
+  interactions  CustomerInteraction[]
+  salesOrders   SalesOrder[]
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([farmId, active])
+  @@index([farmId, name])
+  @@map("customers")
+}
+
+model Lead {
+  id                 String                @id @default(uuid()) @db.Uuid
+  farmId             String                @map("farm_id") @db.Uuid
+  customerId         String?               @map("customer_id") @db.Uuid
+  speciesId          String?               @map("species_id") @db.Uuid
+  title              String
+  status             LeadStatus            @default(NEW)
+  source             String?
+  contactName        String?               @map("contact_name")
+  phone              String?
+  whatsapp           String?
+  email              String?
+  expectedDemandKg   Decimal?              @map("expected_demand_kg") @db.Decimal(14, 3)
+  expectedPricePerKg Decimal?              @map("expected_price_per_kg") @db.Decimal(18, 2)
+  nextFollowUpAt     DateTime?             @map("next_follow_up_at") @db.Timestamptz(3)
+  notes              String?
+  farm               Farm                  @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  customer           Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  species            Species?              @relation(fields: [speciesId], references: [id], onDelete: SetNull)
+  opportunities      SalesOpportunity[]
+  interactions       CustomerInteraction[]
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([farmId, status])
+  @@index([farmId, nextFollowUpAt])
+  @@map("leads")
+}
+
+model SalesOpportunity {
+  id                 String              @id @default(uuid()) @db.Uuid
+  farmId             String              @map("farm_id") @db.Uuid
+  customerId         String              @map("customer_id") @db.Uuid
+  leadId             String?             @map("lead_id") @db.Uuid
+  speciesId          String?             @map("species_id") @db.Uuid
+  title              String
+  status             OpportunityStatus   @default(OPEN)
+  expectedQtyKg      Decimal?            @map("expected_qty_kg") @db.Decimal(14, 3)
+  expectedPricePerKg Decimal?            @map("expected_price_per_kg") @db.Decimal(18, 2)
+  expectedCloseDate  DateTime?           @map("expected_close_date") @db.Date
+  notes              String?
+  farm               Farm                @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  customer           Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lead               Lead?               @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  species            Species?            @relation(fields: [speciesId], references: [id], onDelete: SetNull)
+  interactions       CustomerInteraction[]
+  salesOrders        SalesOrder[]
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([farmId, status])
+  @@index([customerId, status])
+  @@map("sales_opportunities")
+}
+
+model CustomerInteraction {
+  id             String             @id @default(uuid()) @db.Uuid
+  farmId         String             @map("farm_id") @db.Uuid
+  customerId     String?            @map("customer_id") @db.Uuid
+  leadId         String?            @map("lead_id") @db.Uuid
+  opportunityId  String?            @map("opportunity_id") @db.Uuid
+  interactionType InteractionType   @map("interaction_type")
+  occurredAt     DateTime           @map("occurred_at") @db.Timestamptz(3)
+  summary        String
+  nextFollowUpAt DateTime?          @map("next_follow_up_at") @db.Timestamptz(3)
+  createdById    String?            @map("created_by_id") @db.Uuid
+  farm           Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  customer       Customer?          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lead           Lead?              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  opportunity    SalesOpportunity?  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([farmId, occurredAt])
+  @@index([customerId, occurredAt])
+  @@index([leadId, occurredAt])
+  @@map("customer_interactions")
+}
+
+model SalesOrder {
+  id                    String            @id @default(uuid()) @db.Uuid
+  farmId                String            @map("farm_id") @db.Uuid
+  customerId            String            @map("customer_id") @db.Uuid
+  opportunityId         String?           @map("opportunity_id") @db.Uuid
+  orderNumber           String            @map("order_number")
+  status                SalesOrderStatus  @default(DRAFT)
+  orderDate             DateTime          @map("order_date") @db.Date
+  requestedDeliveryDate DateTime?         @map("requested_delivery_date") @db.Date
+  paymentTerms          String?           @map("payment_terms")
+  notes                 String?
+  farm                  Farm              @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  customer              Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  opportunity           SalesOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  items                 SalesOrderItem[]
+  deliveries            Delivery[]
+  invoices              Invoice[]
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, orderNumber])
+  @@index([farmId, status])
+  @@index([customerId, orderDate])
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id             String                  @id @default(uuid()) @db.Uuid
+  salesOrderId   String                  @map("sales_order_id") @db.Uuid
+  speciesId      String                  @map("species_id") @db.Uuid
+  description    String?
+  quantityKg     Decimal                 @map("quantity_kg") @db.Decimal(14, 3)
+  unitPricePerKg Decimal                 @map("unit_price_per_kg") @db.Decimal(18, 2)
+  salesOrder     SalesOrder              @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  species        Species                 @relation(fields: [speciesId], references: [id], onDelete: Restrict)
+  allocations    FulfillmentAllocation[]
+  deliveryItems  DeliveryItem[]
+  createdAt      DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([salesOrderId])
+  @@index([speciesId])
+  @@map("sales_order_items")
+}
+
+model HarvestLot {
+  id          String                  @id @default(uuid()) @db.Uuid
+  farmId      String                  @map("farm_id") @db.Uuid
+  harvestId   String                  @unique @map("harvest_id") @db.Uuid
+  speciesId   String                  @map("species_id") @db.Uuid
+  lotCode     String                  @map("lot_code")
+  quantityKg  Decimal                 @map("quantity_kg") @db.Decimal(14, 3)
+  qualityGrade String?                @map("quality_grade")
+  notes       String?
+  farm        Farm                    @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  harvest     Harvest                 @relation(fields: [harvestId], references: [id], onDelete: Restrict)
+  species     Species                 @relation(fields: [speciesId], references: [id], onDelete: Restrict)
+  allocations FulfillmentAllocation[]
+  createdAt   DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, lotCode])
+  @@index([farmId, speciesId])
+  @@map("harvest_lots")
+}
+
+model FulfillmentAllocation {
+  id             String            @id @default(uuid()) @db.Uuid
+  orderItemId    String            @map("order_item_id") @db.Uuid
+  harvestLotId   String            @map("harvest_lot_id") @db.Uuid
+  allocatedKg    Decimal           @map("allocated_kg") @db.Decimal(14, 3)
+  status         FulfillmentStatus @default(RESERVED)
+  notes          String?
+  orderItem      SalesOrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  harvestLot     HarvestLot        @relation(fields: [harvestLotId], references: [id], onDelete: Restrict)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([orderItemId, status])
+  @@index([harvestLotId, status])
+  @@map("fulfillment_allocations")
+}
+
+model Delivery {
+  id             String         @id @default(uuid()) @db.Uuid
+  farmId         String         @map("farm_id") @db.Uuid
+  salesOrderId   String         @map("sales_order_id") @db.Uuid
+  deliveryNumber String         @map("delivery_number")
+  status         DeliveryStatus @default(PLANNED)
+  plannedAt      DateTime?      @map("planned_at") @db.Timestamptz(3)
+  dispatchedAt   DateTime?      @map("dispatched_at") @db.Timestamptz(3)
+  deliveredAt    DateTime?      @map("delivered_at") @db.Timestamptz(3)
+  recipientName  String?        @map("recipient_name")
+  notes          String?
+  farm           Farm           @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  salesOrder     SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Restrict)
+  items          DeliveryItem[]
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, deliveryNumber])
+  @@index([salesOrderId, status])
+  @@map("deliveries")
+}
+
+model DeliveryItem {
+  id          String         @id @default(uuid()) @db.Uuid
+  deliveryId  String         @map("delivery_id") @db.Uuid
+  orderItemId String         @map("order_item_id") @db.Uuid
+  quantityKg  Decimal        @map("quantity_kg") @db.Decimal(14, 3)
+  delivery    Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  orderItem   SalesOrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([deliveryId])
+  @@index([orderItemId])
+  @@map("delivery_items")
+}
+
+model Invoice {
+  id               String        @id @default(uuid()) @db.Uuid
+  farmId           String        @map("farm_id") @db.Uuid
+  salesOrderId     String        @map("sales_order_id") @db.Uuid
+  invoiceNumber    String        @map("invoice_number")
+  status           InvoiceStatus @default(DRAFT)
+  issueDate        DateTime      @map("issue_date") @db.Date
+  dueDate          DateTime?     @map("due_date") @db.Date
+  subtotalAmount   Decimal       @map("subtotal_amount") @db.Decimal(18, 2)
+  adjustmentAmount Decimal       @default(0) @map("adjustment_amount") @db.Decimal(18, 2)
+  totalAmount      Decimal       @map("total_amount") @db.Decimal(18, 2)
+  notes            String?
+  farm             Farm          @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  salesOrder       SalesOrder    @relation(fields: [salesOrderId], references: [id], onDelete: Restrict)
+  payments         Payment[]
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, invoiceNumber])
+  @@index([farmId, status])
+  @@index([salesOrderId])
+  @@map("invoices")
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Uuid
+  invoiceId   String        @map("invoice_id") @db.Uuid
+  paidAt      DateTime      @map("paid_at") @db.Timestamptz(3)
+  amount      Decimal       @db.Decimal(18, 2)
+  method      PaymentMethod @default(TRANSFER)
+  reference   String?
+  notes       String?
+  createdById String?       @map("created_by_id") @db.Uuid
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([invoiceId, paidAt])
+  @@map("payments")
 }
