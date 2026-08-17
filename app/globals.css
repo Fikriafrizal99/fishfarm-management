@@ -1,0 +1,39 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #12343b;
+  background: #eef8f8;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: linear-gradient(180deg, #e6f8f7 0, #f7fbfb 320px); }
+button, input, select, textarea { font: inherit; }
+
+.shell { width: min(100% - 28px, 920px); margin: 0 auto; padding: 28px 0 48px; }
+.hero { padding: 28px; border-radius: 28px; color: white; background: linear-gradient(135deg, #057d86, #06a49b); box-shadow: 0 18px 44px rgba(10, 82, 88, .18); }
+.hero h1 { margin: 6px 0 8px; font-size: clamp(2rem, 7vw, 3.25rem); }
+.hero p { margin-bottom: 0; opacity: .9; }
+.eyebrow { margin: 0; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: .72rem; }
+.eyebrow.dark { color: #128b8d; }
+.metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+.metrics article, .panel { background: rgba(255,255,255,.94); border: 1px solid rgba(30,120,125,.12); box-shadow: 0 10px 28px rgba(15,70,75,.07); }
+.metrics article { padding: 18px; border-radius: 20px; }
+.metrics span, .kpis span, .pondRow span { display: block; color: #657b80; font-size: .82rem; }
+.metrics strong { display: block; margin-top: 6px; font-size: 1.45rem; }
+.panel { border-radius: 24px; padding: 20px; margin-top: 16px; }
+.panelTitle { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.panel h2 { margin: 5px 0 0; font-size: 1.2rem; }
+.kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 18px; }
+.kpis > div { padding: 14px; border-radius: 16px; background: #f4f9f9; }
+.kpis strong { display: block; margin-top: 5px; }
+.pondList { margin-top: 12px; }
+.pondRow { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 15px 0; border-top: 1px solid #e8eeee; }
+.pondRow strong { display: block; margin-bottom: 5px; }
+.badge { display: inline-flex !important; width: fit-content; border-radius: 999px; padding: 7px 10px; font-size: .68rem !important; font-weight: 900; letter-spacing: .03em; }
+.badge.good { color: #08723f; background: #dcf7e7; }
+.badge.danger { color: #a23232; background: #fde7e7; }
+footer { color: #70858a; text-align: center; font-size: .8rem; padding: 24px 8px 0; }
+
+@media (min-width: 720px) {
+  .metrics { grid-template-columns: repeat(4, 1fr); }
+  .kpis { grid-template-columns: repeat(4, 1fr); }
+}

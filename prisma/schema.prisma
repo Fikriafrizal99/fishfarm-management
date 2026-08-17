@@ -1,0 +1,397 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum FarmRole {
+  OWNER
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+enum PondStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum CycleStatus {
+  PLANNED
+  ACTIVE
+  HARVESTING
+  COMPLETED
+  CANCELLED
+}
+
+enum AllocationType {
+  DIRECT
+  SHARED
+}
+
+enum ExpenseCategory {
+  SEED
+  FEED
+  MEDICINE
+  PROBIOTIC
+  ELECTRICITY
+  WATER
+  LABOR
+  MAINTENANCE
+  TRANSPORT
+  HARVEST
+  OTHER
+}
+
+enum ExpenseSourceType {
+  MANUAL
+  STOCKING
+  FEEDING
+  TREATMENT
+  HARVEST
+  OTHER
+}
+
+enum HarvestType {
+  PARTIAL
+  FINAL
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  ACTION_REQUIRED
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model User {
+  id          String           @id @default(uuid()) @db.Uuid
+  email       String           @unique
+  name        String?
+  memberships FarmMembership[]
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("users")
+}
+
+model FarmMembership {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  farmId    String   @map("farm_id") @db.Uuid
+  role      FarmRole @default(VIEWER)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([userId, farmId])
+  @@index([farmId, role])
+  @@map("farm_memberships")
+}
+
+model Farm {
+  id           String           @id @default(uuid()) @db.Uuid
+  name         String
+  locationText String?          @map("location_text")
+  timezone     String           @default("Asia/Jakarta")
+  currency     String           @default("IDR") @db.VarChar(3)
+  memberships  FarmMembership[]
+  ponds        Pond[]
+  cycles       ProductionCycle[]
+  feedTypes    FeedType[]
+  expenses     Expense[]
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("farms")
+}
+
+model Pond {
+  id        String     @id @default(uuid()) @db.Uuid
+  farmId    String     @map("farm_id") @db.Uuid
+  code      String
+  name      String?
+  pondType  String?    @map("pond_type")
+  lengthM   Decimal?   @map("length_m") @db.Decimal(10, 2)
+  widthM    Decimal?   @map("width_m") @db.Decimal(10, 2)
+  depthM    Decimal?   @map("depth_m") @db.Decimal(10, 2)
+  volumeM3  Decimal?   @map("volume_m3") @db.Decimal(14, 3)
+  status    PondStatus @default(ACTIVE)
+  notes     String?
+  farm      Farm       @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  cycles    ProductionCycle[]
+  expenses  Expense[]
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, code])
+  @@index([farmId, status])
+  @@map("ponds")
+}
+
+model Species {
+  id             String            @id @default(uuid()) @db.Uuid
+  commonName     String            @unique @map("common_name")
+  scientificName String?           @map("scientific_name")
+  active         Boolean           @default(true)
+  cycles         ProductionCycle[]
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("species")
+}
+
+model ProductionCycle {
+  id                      String          @id @default(uuid()) @db.Uuid
+  farmId                  String          @map("farm_id") @db.Uuid
+  pondId                  String          @map("pond_id") @db.Uuid
+  speciesId               String          @map("species_id") @db.Uuid
+  cycleCode               String          @map("cycle_code")
+  status                  CycleStatus     @default(PLANNED)
+  startedAt               DateTime?       @map("started_at") @db.Timestamptz(3)
+  targetHarvestDate       DateTime?       @map("target_harvest_date") @db.Date
+  completedAt             DateTime?       @map("completed_at") @db.Timestamptz(3)
+  targetSrPct             Decimal?        @map("target_sr_pct") @db.Decimal(7, 4)
+  targetFcr               Decimal?        @map("target_fcr") @db.Decimal(8, 4)
+  targetHarvestWeightKg   Decimal?        @map("target_harvest_weight_kg") @db.Decimal(14, 3)
+  targetHppPerKg          Decimal?        @map("target_hpp_per_kg") @db.Decimal(18, 2)
+  targetSellingPricePerKg Decimal?        @map("target_selling_price_per_kg") @db.Decimal(18, 2)
+  notes                   String?
+  farm                    Farm            @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  pond                    Pond            @relation(fields: [pondId], references: [id], onDelete: Restrict)
+  species                 Species         @relation(fields: [speciesId], references: [id], onDelete: Restrict)
+  stockings               Stocking[]
+  feedingLogs             FeedingLog[]
+  mortalityLogs           MortalityLog[]
+  samplingLogs            SamplingLog[]
+  treatmentLogs           TreatmentLog[]
+  expenses                Expense[]
+  harvests                Harvest[]
+  kpiSnapshots            KpiSnapshot[]
+  alerts                  Alert[]
+  createdAt               DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, cycleCode])
+  @@index([pondId, status])
+  @@index([farmId, status])
+  @@index([speciesId])
+  @@map("production_cycles")
+}
+
+model Stocking {
+  id              String          @id @default(uuid()) @db.Uuid
+  cycleId         String          @map("cycle_id") @db.Uuid
+  eventDate       DateTime        @map("event_date") @db.Date
+  quantity        Int
+  avgWeightG      Decimal?        @map("avg_weight_g") @db.Decimal(12, 3)
+  seedCostPerUnit Decimal?        @map("seed_cost_per_unit") @db.Decimal(18, 2)
+  totalSeedCost   Decimal?        @map("total_seed_cost") @db.Decimal(18, 2)
+  supplier        String?
+  notes           String?
+  createdById     String?         @map("created_by_id") @db.Uuid
+  cycle           ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([cycleId, eventDate])
+  @@map("stockings")
+}
+
+model FeedType {
+  id              String       @id @default(uuid()) @db.Uuid
+  farmId          String       @map("farm_id") @db.Uuid
+  name            String
+  brand           String?
+  proteinPct      Decimal?     @map("protein_pct") @db.Decimal(6, 3)
+  defaultUnitCost Decimal?     @map("default_unit_cost") @db.Decimal(18, 2)
+  active          Boolean      @default(true)
+  farm            Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  feedingLogs     FeedingLog[]
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, name, brand])
+  @@index([farmId, active])
+  @@map("feed_types")
+}
+
+model FeedingLog {
+  id            String          @id @default(uuid()) @db.Uuid
+  cycleId       String          @map("cycle_id") @db.Uuid
+  feedTypeId    String?         @map("feed_type_id") @db.Uuid
+  eventAt       DateTime        @map("event_at") @db.Timestamptz(3)
+  quantityKg    Decimal         @map("quantity_kg") @db.Decimal(14, 3)
+  unitCostPerKg Decimal?        @map("unit_cost_per_kg") @db.Decimal(18, 2)
+  notes         String?
+  createdById   String?         @map("created_by_id") @db.Uuid
+  cycle         ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  feedType      FeedType?       @relation(fields: [feedTypeId], references: [id], onDelete: SetNull)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([cycleId, eventAt])
+  @@index([feedTypeId])
+  @@map("feeding_logs")
+}
+
+model MortalityLog {
+  id             String          @id @default(uuid()) @db.Uuid
+  cycleId        String          @map("cycle_id") @db.Uuid
+  eventAt        DateTime        @map("event_at") @db.Timestamptz(3)
+  quantity       Int
+  suspectedCause String?         @map("suspected_cause")
+  notes          String?
+  createdById    String?         @map("created_by_id") @db.Uuid
+  cycle          ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([cycleId, eventAt])
+  @@map("mortality_logs")
+}
+
+model SamplingLog {
+  id                  String          @id @default(uuid()) @db.Uuid
+  cycleId             String          @map("cycle_id") @db.Uuid
+  sampledAt           DateTime        @map("sampled_at") @db.Timestamptz(3)
+  sampleCount         Int             @map("sample_count")
+  totalSampleWeightKg Decimal?        @map("total_sample_weight_kg") @db.Decimal(14, 3)
+  averageWeightG      Decimal?        @map("average_weight_g") @db.Decimal(12, 3)
+  averageLengthCm     Decimal?        @map("average_length_cm") @db.Decimal(12, 3)
+  observedPopulation  Int?            @map("observed_population")
+  notes               String?
+  createdById         String?         @map("created_by_id") @db.Uuid
+  cycle               ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([cycleId, sampledAt])
+  @@map("sampling_logs")
+}
+
+model TreatmentLog {
+  id            String          @id @default(uuid()) @db.Uuid
+  cycleId       String          @map("cycle_id") @db.Uuid
+  eventAt       DateTime        @map("event_at") @db.Timestamptz(3)
+  treatmentType String          @map("treatment_type")
+  productName   String?         @map("product_name")
+  quantity      Decimal?        @db.Decimal(14, 3)
+  unit          String?
+  costAmount    Decimal?        @map("cost_amount") @db.Decimal(18, 2)
+  reason        String?
+  notes         String?
+  createdById   String?         @map("created_by_id") @db.Uuid
+  cycle         ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([cycleId, eventAt])
+  @@map("treatment_logs")
+}
+
+model Expense {
+  id             String            @id @default(uuid()) @db.Uuid
+  farmId         String            @map("farm_id") @db.Uuid
+  cycleId        String?           @map("cycle_id") @db.Uuid
+  pondId         String?           @map("pond_id") @db.Uuid
+  expenseDate    DateTime          @map("expense_date") @db.Date
+  category       ExpenseCategory
+  description    String
+  amount         Decimal           @db.Decimal(18, 2)
+  allocationType AllocationType    @default(DIRECT) @map("allocation_type")
+  sourceType     ExpenseSourceType @default(MANUAL) @map("source_type")
+  sourceId       String?           @map("source_id") @db.Uuid
+  notes          String?
+  createdById    String?           @map("created_by_id") @db.Uuid
+  farm           Farm              @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  cycle          ProductionCycle?  @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  pond           Pond?             @relation(fields: [pondId], references: [id], onDelete: Restrict)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([farmId, sourceType, sourceId])
+  @@index([farmId, expenseDate])
+  @@index([cycleId, expenseDate])
+  @@index([pondId, expenseDate])
+  @@map("expenses")
+}
+
+model Harvest {
+  id                String          @id @default(uuid()) @db.Uuid
+  cycleId           String          @map("cycle_id") @db.Uuid
+  harvestedAt       DateTime        @map("harvested_at") @db.Timestamptz(3)
+  harvestType       HarvestType     @map("harvest_type")
+  fishCount         Int?            @map("fish_count")
+  weightKg          Decimal         @map("weight_kg") @db.Decimal(14, 3)
+  sellingPricePerKg Decimal         @map("selling_price_per_kg") @db.Decimal(18, 2)
+  revenueAmount     Decimal         @map("revenue_amount") @db.Decimal(18, 2)
+  buyerName         String?         @map("buyer_name")
+  notes             String?
+  createdById       String?         @map("created_by_id") @db.Uuid
+  cycle             ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([cycleId, harvestedAt])
+  @@map("harvests")
+}
+
+model KpiSnapshot {
+  id                     String          @id @default(uuid()) @db.Uuid
+  cycleId                String          @map("cycle_id") @db.Uuid
+  snapshotAt             DateTime        @map("snapshot_at") @db.Timestamptz(3)
+  estimatedPopulation    Int?            @map("estimated_population")
+  survivalRatePct        Decimal?        @map("survival_rate_pct") @db.Decimal(7, 4)
+  mortalityRatePct       Decimal?        @map("mortality_rate_pct") @db.Decimal(7, 4)
+  avgWeightG             Decimal?        @map("avg_weight_g") @db.Decimal(12, 3)
+  estimatedBiomassKg     Decimal?        @map("estimated_biomass_kg") @db.Decimal(14, 3)
+  cumulativeFeedKg       Decimal?        @map("cumulative_feed_kg") @db.Decimal(14, 3)
+  fcr                    Decimal?        @db.Decimal(8, 4)
+  totalCost              Decimal?        @map("total_cost") @db.Decimal(18, 2)
+  estimatedHppPerKg      Decimal?        @map("estimated_hpp_per_kg") @db.Decimal(18, 2)
+  projectedRevenue       Decimal?        @map("projected_revenue") @db.Decimal(18, 2)
+  projectedMarginPct     Decimal?        @map("projected_margin_pct") @db.Decimal(7, 4)
+  calculationVersion     String          @map("calculation_version")
+  cycle                  ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([cycleId, snapshotAt])
+  @@map("kpi_snapshots")
+}
+
+model Alert {
+  id                String          @id @default(uuid()) @db.Uuid
+  cycleId           String          @map("cycle_id") @db.Uuid
+  ruleCode          String          @map("rule_code")
+  severity          AlertSeverity
+  status            AlertStatus     @default(OPEN)
+  title             String
+  message           String
+  metricName        String?         @map("metric_name")
+  metricValue       Decimal?        @map("metric_value") @db.Decimal(18, 6)
+  thresholdValue    Decimal?        @map("threshold_value") @db.Decimal(18, 6)
+  recommendedAction String?         @map("recommended_action")
+  metadata          Json?
+  triggeredAt       DateTime        @map("triggered_at") @db.Timestamptz(3)
+  acknowledgedAt    DateTime?       @map("acknowledged_at") @db.Timestamptz(3)
+  resolvedAt        DateTime?       @map("resolved_at") @db.Timestamptz(3)
+  ruleVersion       String          @map("rule_version")
+  cycle             ProductionCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([cycleId, status, severity])
+  @@index([ruleCode, triggeredAt])
+  @@map("alerts")
+}

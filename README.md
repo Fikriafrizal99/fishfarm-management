@@ -14,18 +14,6 @@ The first version is intentionally not AI-first. Core calculations and alerts ar
 
 The mockup above is the initial visual direction for Dashboard, Pond Detail, Daily Input, and Finance & Harvest. See [`docs/UI_REFERENCE.md`](docs/UI_REFERENCE.md) for screen behavior and implementation guidance.
 
-## V0.1 Scope
-
-The product foundation is documented before implementation:
-
-- Product Requirements Document (PRD)
-- System architecture
-- Domain and data model
-- KPI/formula model
-- Rules-based Decision Engine
-- UI reference
-- MVP roadmap
-
 ## MVP Modules
 
 1. Dashboard
@@ -62,7 +50,7 @@ The product foundation is documented before implementation:
 - Every important KPI must be traceable to raw records
 - Operational, biological, and financial data are connected by production cycle
 - Alerts must explain why they fired
-- Historical cycles must remain immutable enough for comparison and audit
+- Historical cycles must remain auditable
 - Start simple; add sensors, AI, and automation only when useful data exists
 
 ## Documentation
@@ -70,28 +58,45 @@ The product foundation is documented before implementation:
 - [`docs/PRD.md`](docs/PRD.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/DOMAIN_MODEL.md`](docs/DOMAIN_MODEL.md)
+- [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md)
 - [`docs/KPI_MODEL.md`](docs/KPI_MODEL.md)
 - [`docs/DECISION_ENGINE.md`](docs/DECISION_ENGINE.md)
 - [`docs/UI_REFERENCE.md`](docs/UI_REFERENCE.md)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
-## Initial Technical Direction
-
-Recommended baseline:
+## Technical Baseline
 
 - **Frontend:** Next.js + TypeScript, responsive PWA
-- **Backend:** Next.js API / service layer initially; separable later
+- **Backend:** Next.js server-side application/service layer
 - **Database:** PostgreSQL
-- **ORM:** Prisma or Drizzle
-- **Authentication:** email/password or managed auth provider
-- **Charts:** lightweight web chart library
-- **Deployment:** managed web hosting + managed PostgreSQL
-- **Notifications later:** Telegram / WhatsApp / push notification adapters
+- **ORM:** Prisma
+- **Architecture:** modular monolith
+- **Notifications later:** Telegram / WhatsApp / push adapters
 
-The architecture is designed as a **modular monolith first**, not microservices. This keeps development, deployment, and debugging simple while preserving clear domain boundaries.
+## Repository Structure
+
+```text
+app/                    Next.js presentation layer
+src/application/        use-case orchestration / transactions
+src/domain/             pure domain rules and KPI calculations
+src/lib/                infrastructure helpers
+prisma/                 database schema and migrations
+docs/                   product and architecture documentation
+```
+
+## Local Setup
+
+```bash
+npm install
+cp .env.example .env
+npm run prisma:generate
+npm run dev
+```
+
+A real PostgreSQL database is required before running migrations. Do not commit `.env`.
 
 ## Status
 
-**Phase:** Product & Architecture Foundation  
-**Version:** 0.1  
-**Implementation:** not started
+**Phase:** Database Schema & Application Skeleton  
+**Version:** 0.2  
+**Implementation:** skeleton started; farm use cases and real dashboard data are not wired yet
