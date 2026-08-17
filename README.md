@@ -14,6 +14,40 @@ The first version is intentionally not AI-first. Core calculations and alerts ar
 
 The mockup above is the initial visual direction for Dashboard, Pond Detail, Daily Input, and Finance & Harvest. See [`docs/UI_REFERENCE.md`](docs/UI_REFERENCE.md) for screen behavior and implementation guidance.
 
+## Current Development Setup
+
+The repository now includes a repeatable local development database:
+
+- PostgreSQL 17 in Docker Compose
+- Prisma schema and generated-client workflow
+- PostgreSQL-specific domain constraints
+- deterministic Nila development seed
+- `KLM-001` healthy/on-target scenario
+- `KLM-002` needs-attention scenario
+- database health endpoint
+
+### Windows / PowerShell bootstrap
+
+```powershell
+Copy-Item .env.example .env
+npm install
+./scripts/dev-db.ps1
+```
+
+Or, after `.env` and dependencies already exist:
+
+```powershell
+npm run db:bootstrap
+```
+
+Inspect data with:
+
+```powershell
+npm run prisma:studio
+```
+
+Full instructions: [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DATABASE.md).
+
 ## MVP Modules
 
 1. Dashboard
@@ -59,6 +93,7 @@ The mockup above is the initial visual direction for Dashboard, Pond Detail, Dai
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/DOMAIN_MODEL.md`](docs/DOMAIN_MODEL.md)
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md)
+- [`docs/DEVELOPMENT_DATABASE.md`](docs/DEVELOPMENT_DATABASE.md)
 - [`docs/KPI_MODEL.md`](docs/KPI_MODEL.md)
 - [`docs/DECISION_ENGINE.md`](docs/DECISION_ENGINE.md)
 - [`docs/UI_REFERENCE.md`](docs/UI_REFERENCE.md)
@@ -80,23 +115,24 @@ app/                    Next.js presentation layer
 src/application/        use-case orchestration / transactions
 src/domain/             pure domain rules and KPI calculations
 src/lib/                infrastructure helpers
-prisma/                 database schema and migrations
+prisma/                 database schema, seed and migrations
+scripts/                development database helpers
 docs/                   product and architecture documentation
 ```
 
-## Local Setup
+## Database Health
 
-```bash
-npm install
-cp .env.example .env
-npm run prisma:generate
-npm run dev
+After bootstrapping the database and running the application:
+
+```text
+GET /api/health/db
 ```
 
-A real PostgreSQL database is required before running migrations. Do not commit `.env`.
+The endpoint confirms PostgreSQL connectivity and reports basic development row counts.
 
 ## Status
 
-**Phase:** Database Schema & Application Skeleton  
-**Version:** 0.2  
-**Implementation:** skeleton started; farm use cases and real dashboard data are not wired yet
+**Phase:** Development Database & Backend Foundation  
+**Version:** 0.3  
+**Database:** local development bootstrap ready  
+**Application integration:** next milestone
