@@ -18,7 +18,11 @@ import {
   calculateWeightGainG,
 } from "@/src/domain/kpi/growth";
 
-export type PondDetailStatus = "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION";
+export type PondDetailStatus =
+  | "ON_TARGET"
+  | "MONITOR"
+  | "NEEDS_ATTENTION"
+  | "COMPLETED";
 
 export interface SamplingTrendPoint {
   id: string;
@@ -48,14 +52,16 @@ export interface PondDetail {
   cycleStatus: CycleStatus;
   species: string;
   startedAt: Date | null;
+  completedAt: Date | null;
   targetHarvestDate: Date | null;
   day: number;
   daysToTargetHarvest: number | null;
   stockedFish: number;
   mortalityFish: number;
   harvestedFishCount: number;
+  harvestedBiomassKg: number;
   estimatedPopulation: number;
-  populationSource: "OBSERVED" | "ESTIMATED";
+  populationSource: "OBSERVED" | "ESTIMATED" | "FINAL";
   survivalRatePct: number | null;
   mortalityRatePct: number | null;
   latestAverageWeightG: number | null;
@@ -67,6 +73,10 @@ export interface PondDetail {
   targetHarvestWeightKg: number | null;
   totalCost: number;
   currentCostPerStandingKg: number | null;
+  revenueAmount: number;
+  actualHppPerKg: number | null;
+  netProfit: number | null;
+  marginPct: number | null;
   status: PondDetailStatus;
   samplingTrend: SamplingTrendPoint[];
   expenseBreakdown: Array<{ category: string; amount: number }>;
@@ -84,9 +94,10 @@ function toNumber(value: unknown): number {
   return value === null || value === undefined ? 0 : Number(value);
 }
 
-function dayOfCycle(startedAt: Date | null, now: Date): number {
+function dayOfCycle(startedAt: Date | null, endedAt: Date | null, now: Date): number {
   if (!startedAt) return 0;
-  return Math.max(1, Math.floor((now.getTime() - startedAt.getTime()) / 86_400_000) + 1);
+  const end = endedAt ?? now;
+  return Math.max(1, Math.floor((end.getTime() - startedAt.getTime()) / 86_400_000) + 1);
 }
 
 function daysUntil(target: Date | null, now: Date): number | null {
@@ -95,12 +106,14 @@ function daysUntil(target: Date | null, now: Date): number | null {
 }
 
 function determineStatus(input: {
+  cycleStatus: CycleStatus;
   sr: number | null;
   targetSr: number | null;
   fcr: number | null;
   targetFcr: number | null;
   hasActionAlert: boolean;
 }): PondDetailStatus {
+  if (input.cycleStatus === CycleStatus.COMPLETED) return "COMPLETED";
   if (input.hasActionAlert) return "NEEDS_ATTENTION";
   if (
     (input.sr !== null && input.targetSr !== null && input.sr < input.targetSr) ||
@@ -119,7 +132,7 @@ const includeCycle = {
   mortalityLogs: true,
   feedingLogs: true,
   samplingLogs: { orderBy: { sampledAt: "asc" as const } },
-  harvests: true,
+  harvests: { orderBy: { harvestedAt: "asc" as const } },
   expenses: true,
   alerts: {
     where: { status: AlertStatus.OPEN },
@@ -150,18 +163,15 @@ export async function getPondDetail(
 
   if (!cycle) return null;
 
+  const isCompleted = cycle.status === CycleStatus.COMPLETED;
   const stockedFish = cycle.stockings.reduce((sum, item) => sum + item.quantity, 0);
   const mortalityFish = cycle.mortalityLogs.reduce((sum, item) => sum + item.quantity, 0);
   const harvestedFishCount = cycle.harvests.reduce(
     (sum, item) => sum + (item.fishCount ?? 0),
     0,
   );
-
-  const calculatedPopulation = calculateEstimatedPopulation(
-    stockedFish,
-    mortalityFish,
-    harvestedFishCount,
-  );
+  const allHarvestCountsKnown =
+    cycle.harvests.length > 0 && cycle.harvests.every((item) => item.fishCount !== null);
 
   const samplingTrend: SamplingTrendPoint[] = cycle.samplingLogs.map((sample, index) => {
     const averageWeightG =
@@ -212,18 +222,34 @@ export async function getPondDetail(
   const latestSample = cycle.samplingLogs.at(-1) ?? null;
   const latestTrend = samplingTrend.at(-1) ?? null;
   const observedPopulation = latestSample?.observedPopulation ?? null;
-  const estimatedPopulation = observedPopulation ?? calculatedPopulation;
-  const populationSource = observedPopulation === null ? "ESTIMATED" : "OBSERVED";
-
-  const survivalRatePct = calculateSurvivalRatePct(
-    estimatedPopulation + harvestedFishCount,
+  const calculatedPopulation = calculateEstimatedPopulation(
     stockedFish,
+    mortalityFish,
+    harvestedFishCount,
   );
+  const estimatedPopulation = isCompleted
+    ? 0
+    : observedPopulation ?? calculatedPopulation;
+  const populationSource: PondDetail["populationSource"] = isCompleted
+    ? "FINAL"
+    : observedPopulation === null
+      ? "ESTIMATED"
+      : "OBSERVED";
+
+  const survivalRatePct = isCompleted
+    ? allHarvestCountsKnown
+      ? calculateSurvivalRatePct(harvestedFishCount, stockedFish)
+      : null
+    : calculateSurvivalRatePct(
+        estimatedPopulation + harvestedFishCount,
+        stockedFish,
+      );
   const mortalityRatePct = calculateMortalityRatePct(mortalityFish, stockedFish);
 
   const latestAverageWeightG = latestTrend?.averageWeightG ?? null;
-  const estimatedBiomassKg =
-    latestAverageWeightG === null
+  const estimatedBiomassKg = isCompleted
+    ? 0
+    : latestAverageWeightG === null
       ? null
       : calculateEstimatedBiomassKg(estimatedPopulation, latestAverageWeightG);
 
@@ -246,19 +272,34 @@ export async function getPondDetail(
   );
 
   const biomassGainKg =
-    estimatedBiomassKg === null || initialBiomassKg === null
+    initialBiomassKg === null
       ? null
-      : calculateBiomassGainKg({
-          standingBiomassKg: estimatedBiomassKg,
-          harvestedBiomassKg,
-          initialBiomassKg,
-        });
+      : isCompleted
+        ? harvestedBiomassKg - initialBiomassKg
+        : estimatedBiomassKg === null
+          ? null
+          : calculateBiomassGainKg({
+              standingBiomassKg: estimatedBiomassKg,
+              harvestedBiomassKg,
+              initialBiomassKg,
+            });
   const fcr = biomassGainKg === null ? null : calculateFcr(cumulativeFeedKg, biomassGainKg);
 
   const totalCost = cycle.expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
+  const revenueAmount = cycle.harvests.reduce(
+    (sum, harvest) => sum + toNumber(harvest.revenueAmount),
+    0,
+  );
   const currentCostPerStandingKg =
-    estimatedBiomassKg !== null && estimatedBiomassKg > 0
+    !isCompleted && estimatedBiomassKg !== null && estimatedBiomassKg > 0
       ? totalCost / estimatedBiomassKg
+      : null;
+  const actualHppPerKg =
+    isCompleted && harvestedBiomassKg > 0 ? totalCost / harvestedBiomassKg : null;
+  const netProfit = isCompleted ? revenueAmount - totalCost : null;
+  const marginPct =
+    isCompleted && revenueAmount > 0 && netProfit !== null
+      ? (netProfit / revenueAmount) * 100
       : null;
 
   const expenseMap = new Map<string, number>();
@@ -292,12 +333,14 @@ export async function getPondDetail(
     cycleStatus: cycle.status,
     species: cycle.species.commonName,
     startedAt: cycle.startedAt,
+    completedAt: cycle.completedAt,
     targetHarvestDate: cycle.targetHarvestDate,
-    day: dayOfCycle(cycle.startedAt, now),
-    daysToTargetHarvest: daysUntil(cycle.targetHarvestDate, now),
+    day: dayOfCycle(cycle.startedAt, cycle.completedAt, now),
+    daysToTargetHarvest: isCompleted ? null : daysUntil(cycle.targetHarvestDate, now),
     stockedFish,
     mortalityFish,
     harvestedFishCount,
+    harvestedBiomassKg,
     estimatedPopulation,
     populationSource,
     survivalRatePct,
@@ -314,7 +357,12 @@ export async function getPondDetail(
         : toNumber(cycle.targetHarvestWeightKg),
     totalCost,
     currentCostPerStandingKg,
+    revenueAmount,
+    actualHppPerKg,
+    netProfit,
+    marginPct,
     status: determineStatus({
+      cycleStatus: cycle.status,
       sr: survivalRatePct,
       targetSr: targetSrPct,
       fcr,
