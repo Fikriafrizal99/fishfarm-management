@@ -59,20 +59,12 @@ function dayOfCycle(startedAt: Date | null, now: Date): number {
 
 function determineStatus(input: {
   sr: number | null;
-  targetSr: number | null;
   fcr: number | null;
-  targetFcr: number | null;
+  hasWarningAlert: boolean;
   hasActionAlert: boolean;
 }): PondHealthStatus {
   if (input.hasActionAlert) return "NEEDS_ATTENTION";
-
-  if (
-    (input.sr !== null && input.targetSr !== null && input.sr < input.targetSr) ||
-    (input.fcr !== null && input.targetFcr !== null && input.fcr > input.targetFcr)
-  ) {
-    return "NEEDS_ATTENTION";
-  }
-
+  if (input.hasWarningAlert) return "MONITOR";
   if (input.sr === null || input.fcr === null) return "MONITOR";
   return "ON_TARGET";
 }
@@ -138,10 +130,12 @@ export async function getDashboardOverview(
       mortality,
       harvestedFishCount,
     );
-    const survivalRatePct = calculateSurvivalRatePct(
-      estimatedPopulation + harvestedFishCount,
-      stockedFish,
-    );
+    const survivalRatePct = hasHarvestWithoutCount
+      ? null
+      : calculateSurvivalRatePct(
+          estimatedPopulation + harvestedFishCount,
+          stockedFish,
+        );
     const mortalityRatePct = calculateMortalityRatePct(mortality, stockedFish);
 
     const latestSample = cycle.samplingLogs[0];
@@ -160,10 +154,15 @@ export async function getDashboardOverview(
         ? null
         : calculateEstimatedBiomassKg(estimatedPopulation, averageWeightG);
 
-    const initialBiomassKg = cycle.stockings.reduce((sum, item) => {
-      if (item.avgWeightG === null) return sum;
-      return sum + (item.quantity * toNumber(item.avgWeightG)) / 1000;
-    }, 0);
+    const initialBiomassKnown =
+      cycle.stockings.length > 0 &&
+      cycle.stockings.every((item) => item.avgWeightG !== null);
+    const initialBiomassKg = initialBiomassKnown
+      ? cycle.stockings.reduce(
+          (sum, item) => sum + (item.quantity * toNumber(item.avgWeightG)) / 1000,
+          0,
+        )
+      : null;
 
     const harvestedBiomassKg = cycle.harvests.reduce(
       (sum, item) => sum + toNumber(item.weightKg),
@@ -175,7 +174,7 @@ export async function getDashboardOverview(
     );
 
     const adjustedBiomassGain =
-      estimatedBiomassKg === null
+      estimatedBiomassKg === null || initialBiomassKg === null
         ? null
         : estimatedBiomassKg + harvestedBiomassKg - initialBiomassKg;
     const fcr =
@@ -198,6 +197,9 @@ export async function getDashboardOverview(
     const hasActionAlert = cycle.alerts.some(
       (alert) => alert.severity === AlertSeverity.ACTION_REQUIRED,
     );
+    const hasWarningAlert = cycle.alerts.some(
+      (alert) => alert.severity === AlertSeverity.WARNING,
+    );
 
     return {
       cycleId: cycle.id,
@@ -219,9 +221,8 @@ export async function getDashboardOverview(
       targetSrPct,
       status: determineStatus({
         sr: survivalRatePct,
-        targetSr: targetSrPct,
         fcr,
-        targetFcr,
+        hasWarningAlert,
         hasActionAlert,
       }),
       openAlertCount: cycle.alerts.length,
@@ -261,6 +262,9 @@ export async function getDashboardOverview(
   );
   const farmBiomassGain =
     estimatedBiomassKg + totalHarvestedBiomass - totalInitialBiomass;
+  const hasUnknownHarvestCount = cycles.some((cycle) =>
+    cycle.harvests.some((harvest) => harvest.fishCount === null),
+  );
 
   return {
     farmId: farm.id,
@@ -271,7 +275,9 @@ export async function getDashboardOverview(
     estimatedBiomassKg,
     runningCost,
     survivalRatePct:
-      totalStocked > 0 ? ((totalStocked - totalMortality) / totalStocked) * 100 : null,
+      totalStocked > 0 && !hasUnknownHarvestCount
+        ? ((totalStocked - totalMortality) / totalStocked) * 100
+        : null,
     mortalityRatePct:
       totalStocked > 0 ? (totalMortality / totalStocked) * 100 : null,
     fcr: farmBiomassGain > 0 ? totalFeed / farmBiomassGain : null,
