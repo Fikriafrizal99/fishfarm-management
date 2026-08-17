@@ -107,20 +107,14 @@ function daysUntil(target: Date | null, now: Date): number | null {
 
 function determineStatus(input: {
   cycleStatus: CycleStatus;
-  sr: number | null;
-  targetSr: number | null;
   fcr: number | null;
-  targetFcr: number | null;
+  sr: number | null;
+  hasWarningAlert: boolean;
   hasActionAlert: boolean;
 }): PondDetailStatus {
   if (input.cycleStatus === CycleStatus.COMPLETED) return "COMPLETED";
   if (input.hasActionAlert) return "NEEDS_ATTENTION";
-  if (
-    (input.sr !== null && input.targetSr !== null && input.sr < input.targetSr) ||
-    (input.fcr !== null && input.targetFcr !== null && input.fcr > input.targetFcr)
-  ) {
-    return "NEEDS_ATTENTION";
-  }
+  if (input.hasWarningAlert) return "MONITOR";
   if (input.sr === null || input.fcr === null) return "MONITOR";
   return "ON_TARGET";
 }
@@ -240,10 +234,12 @@ export async function getPondDetail(
     ? allHarvestCountsKnown
       ? calculateSurvivalRatePct(harvestedFishCount, stockedFish)
       : null
-    : calculateSurvivalRatePct(
-        estimatedPopulation + harvestedFishCount,
-        stockedFish,
-      );
+    : cycle.harvests.some((item) => item.fishCount === null)
+      ? null
+      : calculateSurvivalRatePct(
+          estimatedPopulation + harvestedFishCount,
+          stockedFish,
+        );
   const mortalityRatePct = calculateMortalityRatePct(mortalityFish, stockedFish);
 
   const latestAverageWeightG = latestTrend?.averageWeightG ?? null;
@@ -315,6 +311,9 @@ export async function getPondDetail(
   const hasActionAlert = cycle.alerts.some(
     (alert) => alert.severity === AlertSeverity.ACTION_REQUIRED,
   );
+  const hasWarningAlert = cycle.alerts.some(
+    (alert) => alert.severity === AlertSeverity.WARNING,
+  );
 
   return {
     pondId: cycle.pond.id,
@@ -364,9 +363,8 @@ export async function getPondDetail(
     status: determineStatus({
       cycleStatus: cycle.status,
       sr: survivalRatePct,
-      targetSr: targetSrPct,
       fcr,
-      targetFcr,
+      hasWarningAlert,
       hasActionAlert,
     }),
     samplingTrend,
