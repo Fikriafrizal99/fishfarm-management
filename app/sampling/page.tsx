@@ -54,7 +54,7 @@ export default async function SamplingPage({
         </div>
       ) : null}
       {params.error ? (
-        <div className="notice errorNotice">{decodeURIComponent(params.error)}</div>
+        <div className="notice errorNotice">{params.error}</div>
       ) : null}
       {databaseError ? (
         <div className="notice errorNotice">
