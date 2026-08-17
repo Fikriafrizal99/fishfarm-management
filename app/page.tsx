@@ -85,7 +85,10 @@ export default async function Home() {
             <p className="eyebrow">FishFarm Management</p>
             <h1>Halo, {ownerFirstName} 👋</h1>
           </div>
-          <Link className="heroAction" href="/input">+ Input Harian</Link>
+          <div className="heroActions">
+            <Link className="secondaryButton lightButton" href="/sampling">+ Sampling</Link>
+            <Link className="heroAction" href="/input">+ Input Harian</Link>
+          </div>
         </div>
         <p>{dashboard.farmName} · data langsung dari PostgreSQL</p>
       </header>
@@ -153,7 +156,9 @@ export default async function Home() {
           {dashboard.cycles.map((cycle) => (
             <article className="pondRow" key={cycle.cycleId}>
               <div className="pondMain">
-                <strong>{cycle.pondCode} — {cycle.species}</strong>
+                <Link className="pondLink" href={`/ponds/${encodeURIComponent(cycle.pondCode)}`}>
+                  {cycle.pondCode} — {cycle.species}
+                </Link>
                 <span>
                   Hari ke-{cycle.day} · SR {formatPct(cycle.survivalRatePct)} · FCR {formatFcr(cycle.fcr)}
                 </span>
@@ -182,7 +187,7 @@ export default async function Home() {
       </section>
 
       <footer>
-        V0.4 · Dashboard membaca raw data PostgreSQL melalui application service.
+        V0.5 · Dashboard, sampling, dan detail kolam membaca raw data PostgreSQL.
       </footer>
     </main>
   );
