@@ -17,7 +17,7 @@ function todayInJakarta(): string {
 export default async function InputPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; cycleId?: string }>;
 }) {
   const params = await searchParams;
 
@@ -30,6 +30,10 @@ export default async function InputPage({
     databaseError =
       error instanceof Error ? error.message : "Database belum dapat diakses";
   }
+
+  const selectedCycleId = cycles.some((cycle) => cycle.id === params.cycleId)
+    ? params.cycleId
+    : "";
 
   return (
     <main className="shell formShell">
@@ -61,7 +65,12 @@ export default async function InputPage({
       <form action={submitDailyInput} className="panel inputForm">
         <label>
           <span>Kolam / Siklus</span>
-          <select name="cycleId" required disabled={cycles.length === 0}>
+          <select
+            name="cycleId"
+            required
+            disabled={cycles.length === 0}
+            defaultValue={selectedCycleId}
+          >
             <option value="">Pilih kolam</option>
             {cycles.map((cycle) => (
               <option key={cycle.id} value={cycle.id}>
