@@ -34,11 +34,12 @@ The helper calls `npm run db:bootstrap`:
 2. generate Prisma Client,
 3. push Prisma schema,
 4. apply PostgreSQL-specific constraints,
-5. run production seed,
-6. complete KLM-002 finance ledger seed,
-7. run Sales CRM seed,
-8. remove legacy static development alerts,
-9. run live Decision Engine for active cycles.
+5. execute `prisma/seed-all.ts`,
+6. seed farming data,
+7. complete the KLM-002 finance ledger,
+8. seed Sales CRM data,
+9. remove legacy static development alerts,
+10. run the live Decision Engine for active cycles.
 
 Equivalent:
 
@@ -80,15 +81,21 @@ npm run build
 
 ## Seed Chain
 
-Configured in `prisma.config.ts`:
+Prisma invokes one cross-platform orchestrator:
 
 ```text
+prisma.config.ts
+      ↓
+prisma/seed-all.ts
+      ↓
 prisma/seed.ts
-   ↓
+      ↓
 prisma/seed-finance-completion.ts
-   ↓
+      ↓
 prisma/seed-sales.ts
 ```
+
+`seed-all.ts` runs each stage sequentially and exits with an error if any stage fails. This avoids shell-chain differences between Windows and Unix-like environments.
 
 ### Production seed
 
@@ -125,6 +132,16 @@ Legacy static development alerts are intentionally removed by `decision:evaluate
 - cumulative feed 613 kg
 - approximate FCR about 1.42
 - finance-completion seed ensures seed/feed costs exist in canonical Expense ledger
+
+Expected deterministic KLM-002 finance seed:
+
+```text
+seed cost  = Rp1.875.000
+feed cost  = 613 × Rp10.132 = Rp6.210.916
+total      = Rp8.085.916
+```
+
+With the seeded standing biomass of about 456.75 kg, the dashboard cost per standing kg should therefore be around Rp17.703/kg rather than Rp0.
 
 ## Sales CRM Seed
 
@@ -230,12 +247,25 @@ payments
 
 ## Runtime Validation Gate — V0.8
 
-When the laptop is available:
+Validation progress recorded on 2026-08-17:
+
+- PostgreSQL Docker bootstrap: **PASS**
+- Prisma schema push: **PASS**
+- 22 development constraints: **PASS**
+- Prisma Client generation: **PASS**
+- TypeScript typecheck: **PASS**
+- optimized Next.js production build: **PASS**
+- `/api/health/db`: **PASS**
+- production dashboard render: **PASS**
+- deterministic secondary seed stages: **FIXED; RECHECK REQUIRED**
+- full production + CRM write-flow E2E: **PENDING**
+
+Current local validation commands:
 
 ```powershell
 git pull
-npm install
-npm run db:bootstrap
+npm run db:seed
+npm run decision:evaluate
 npm run typecheck
 npm run build
 npm run dev
@@ -269,7 +299,7 @@ Dashboard
 → inspect invoice/payment seed balances
 ```
 
-Also run `db:reset` once to verify deterministic/idempotent seed behavior.
+Also run `db:reset` once before release candidate sign-off to verify deterministic/idempotent seed behavior from a clean schema.
 
 ## Migration Strategy
 
