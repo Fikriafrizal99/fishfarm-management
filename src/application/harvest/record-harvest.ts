@@ -23,6 +23,7 @@ export interface RecordHarvestCommand {
 
 export interface RecordHarvestResult {
   harvestId: string;
+  pondCode: string;
   cycleStatus: CycleStatus;
   cumulativeHarvestWeightKg: number;
   cumulativeRevenue: number;
@@ -65,6 +66,7 @@ export async function recordHarvest(
     const cycle = await tx.productionCycle.findUnique({
       where: { id: command.cycleId },
       include: {
+        pond: { select: { code: true } },
         stockings: true,
         mortalityLogs: true,
         feedingLogs: true,
@@ -195,6 +197,7 @@ export async function recordHarvest(
 
     return {
       harvestId: harvest.id,
+      pondCode: cycle.pond.code,
       cycleStatus,
       cumulativeHarvestWeightKg,
       cumulativeRevenue,
