@@ -1,286 +1,299 @@
-# MVP Roadmap — FishFarm Management
+# Product Roadmap — FishFarm Management
 
-Version: 0.1
+Version: 0.8
 
-## Phase 0 — Product Foundation
+## Current State
 
-Status: **IN PROGRESS**
+The project has moved beyond product-only foundation work. Production-cycle coding and the first Sales CRM foundation are now implemented remotely.
 
-Deliverables:
+Runtime validation is intentionally deferred until the local Docker/Node environment is available.
+
+## Phase 0 — Product & Architecture Foundation
+
+Status: **SUBSTANTIALLY COMPLETE**
+
 - [x] product vision
-- [x] PRD V0.1
-- [x] system architecture V0.1
-- [x] domain/data model V0.1
-- [x] KPI/formula model V0.1
-- [x] Decision Engine model V0.1
-- [ ] UI information architecture
-- [ ] database schema / ORM model
-- [ ] API/use-case contract
-- [ ] test strategy
+- [x] PRD V0.1 baseline
+- [x] system architecture
+- [x] production domain model
+- [x] database schema baseline
+- [x] KPI/formula model
+- [x] Decision Engine model
+- [x] UI visual reference
+- [x] Sales CRM domain specification
+- [x] production ↔ sales integration boundary
+- [ ] consolidated API/use-case contract document
+- [ ] formal test strategy document
 
-Exit criteria:
-- core entity relationships agreed
-- formulas have explicit definitions
-- projected vs estimated vs actual values are clearly separated
-- MVP scope frozen enough to start implementation
+## Phase 1 — Application & Development Database Foundation
 
----
+Status: **IMPLEMENTED / VALIDATION PENDING**
 
-## Phase 1 — Project Skeleton & Authentication
+- [x] Next.js + TypeScript skeleton
+- [x] PostgreSQL
+- [x] Prisma
+- [x] Docker Compose local database
+- [x] deterministic development seed
+- [x] PostgreSQL-specific constraints
+- [x] database bootstrap script
+- [x] PWA manifest baseline
+- [ ] authentication
+- [ ] production deployment
 
-Goal: deployable application shell.
+## Phase 2 — Production Core
 
-Deliverables:
-- Next.js + TypeScript project
-- lint/format configuration
-- environment configuration
-- PostgreSQL connection
-- ORM + migration setup
-- authentication
-- responsive application shell
-- bottom/mobile navigation
-- basic design tokens/components
+Status: **IMPLEMENTED / VALIDATION PENDING**
 
-Acceptance:
-- user can login
-- authenticated page can read/write test data to database
-- production/staging deployment works
+- [x] farm/pond/cycle schema
+- [x] active cycle model
+- [x] stocking data
+- [x] daily feed input
+- [x] mortality input
+- [x] direct operating expense input
+- [x] canonical Expense ledger linkage
+- [x] sampling input
+- [x] pond detail
+- [x] partial harvest
+- [x] final harvest
+- [ ] full CRUD/admin screens for Farm/Pond/Cycle creation
 
----
+## Phase 3 — Biological KPI Engine
 
-## Phase 2 — Farm, Pond & Cycle Core
+Status: **IMPLEMENTED / VALIDATION PENDING**
 
-Goal: establish the central operational model.
+- [x] ABW
+- [x] estimated population
+- [x] estimated biomass
+- [x] mortality rate
+- [x] estimated SR
+- [x] cumulative feed
+- [x] biomass-gain FCR
+- [x] weight gain
+- [x] ADG
+- [x] growth history UI
+- [x] observed vs estimated labeling
+- [ ] formal unit-test suite
 
-Deliverables:
-- farm profile
-- pond CRUD
-- species seed data
-- production cycle CRUD
-- cycle status lifecycle
-- target configuration
-- active cycle validation
+## Phase 4 — Finance & Harvest
 
-Acceptance:
-- user can create `KLM-001`
-- user can create and activate a Nila cycle with stocking data
-- pond detail shows the active cycle
-- one pond cannot have conflicting active cycles
+Status: **IMPLEMENTED / VALIDATION PENDING**
 
----
+- [x] production Expense ledger
+- [x] linked feed/stocking cost handling
+- [x] total cycle cost
+- [x] current cost per standing biomass
+- [x] partial/final harvest write flow
+- [x] legacy Harvest revenue snapshot
+- [x] Actual HPP for completed cycles
+- [x] net profit
+- [x] margin
+- [x] Final FCR
+- [ ] projected total remaining cost
+- [ ] projected HPP/margin engine
+- [ ] formal BEP UI
 
-## Phase 3 — Daily Operations
+## Phase 5 — Production Dashboard & Decision Engine
 
-Goal: make the application useful every day.
+Status: **IMPLEMENTED V1 / VALIDATION PENDING**
 
-Deliverables:
-- fast daily input screen
-- feeding log
-- mortality log
-- treatment/probiotic log
-- operational notes
-- direct expense input
-- recent activity timeline
+Dashboard:
+- [x] active ponds
+- [x] active estimated population
+- [x] estimated biomass
+- [x] running cost
+- [x] SR/mortality/FCR
+- [x] per-cycle status
+- [x] detail links
 
-Acceptance:
-- typical feed + mortality + note entry can be completed quickly from a phone
-- multiple records in one day aggregate correctly
-- records are traceable to cycle
+Decision Engine:
+- [x] deterministic rule framework
+- [x] sampling-stale rule
+- [x] initial-biomass missing rule
+- [x] FCR target rule
+- [x] SR target rule
+- [x] harvest-date-near rule
+- [x] alert open/update/resolve lifecycle
+- [x] dashboard status derived from alert severity
+- [ ] acknowledge alert UI
+- [ ] configurable farm/species rule UI
+- [ ] mortality daily/trend rules
+- [ ] HPP/margin rules
 
----
+## Phase 6 — Sales CRM Foundation — V0.8
 
-## Phase 4 — Sampling & Biological KPIs
+Status: **IMPLEMENTED FOUNDATION / VALIDATION PENDING**
 
-Goal: turn field sampling into measurable biological performance.
+### Domain boundary
 
-Deliverables:
-- sampling form
-- ABW calculation
-- estimated population
-- estimated biomass
-- mortality rate
-- survival rate
-- cumulative feed
-- FCR
-- growth chart
-- SR chart
-- FCR chart
-- data quality status
+- [x] Sales CRM separated from production UI/domain
+- [x] Lead/Customer/Opportunity/Order have no Pond/Cycle FK
+- [x] HarvestLot introduced as sellable harvested inventory
+- [x] FulfillmentAllocation introduced as integration bridge
 
-Acceptance:
-- sample of 30 fish weighing 8.1 kg calculates ABW = 270 g
-- biomass uses the latest valid ABW and estimated population
-- FCR follows documented biomass-gain formula
-- insufficient data never produces fabricated metrics
+### CRM data model
 
----
+- [x] Customer
+- [x] Lead
+- [x] SalesOpportunity
+- [x] CustomerInteraction
+- [x] SalesOrder
+- [x] SalesOrderItem
+- [x] HarvestLot
+- [x] FulfillmentAllocation
+- [x] Delivery / DeliveryItem
+- [x] Invoice
+- [x] Payment
 
-## Phase 5 — Finance, Costing & Harvest
+### CRM application
 
-Goal: connect biological performance to business performance.
+- [x] Sales Dashboard `/sales`
+- [x] Lead write/list `/sales/leads`
+- [x] Customer write/list `/sales/customers`
+- [x] basic one-line Sales Order write/list `/sales/orders`
+- [x] Fulfillment allocation `/sales/fulfillment`
+- [x] Sales Dashboard pipeline/order/inventory/piutang metrics
+- [x] Harvest automatically creates HarvestLot
+- [x] deterministic CRM seed
+- [x] CRM PostgreSQL constraints
+- [ ] Opportunity dedicated UI
+- [ ] interaction/follow-up update actions
+- [ ] multi-item order UI
+- [ ] Delivery write UI
+- [ ] Invoice write UI
+- [ ] Payment write UI
+- [ ] order status automation from fulfillment/delivery
+- [ ] lead conversion workflow
 
-Deliverables:
-- expense categories
-- linked operational cost handling
-- cumulative cycle cost
-- current cost per standing biomass
-- projected HPP
-- harvest input
-- partial harvest
-- final harvest
-- revenue
-- actual HPP
-- cycle profit
-- margin
-- break-even price
+## Phase 7 — Runtime Validation Gate
 
-Acceptance:
-- feed/seed cost cannot be double counted
-- partial harvest does not incorrectly reduce SR as mortality
-- final cycle can calculate actual HPP from harvested weight
-- user can see target vs actual financial performance
+Status: **PENDING LAPTOP**
 
----
+This gate must happen before adding another large domain.
 
-## Phase 6 — Dashboard V1
+Commands:
 
-Goal: one-screen farm health overview.
-
-Dashboard blocks:
-- active ponds
-- estimated active population
-- estimated biomass
-- running cost
-- SR
-- mortality
-- FCR
-- projected HPP
-- projected margin
-- status per pond/cycle
-- recent warnings
-
-Acceptance:
-- user can identify which pond needs attention without opening every pond
-- every dashboard KPI can drill into its source/detail
-
----
-
-## Phase 7 — Decision Engine V1
-
-Goal: convert KPI deviations into actionable alerts.
-
-Deliverables:
-- rules framework
-- rule configuration
-- data-quality alerts
-- mortality alerts
-- SR alerts
-- FCR alerts
-- growth alerts when target curve exists
-- HPP/margin alerts
-- harvest reminder rules
-- alert lifecycle
-- ON_TARGET / MONITOR / NEEDS_ATTENTION / INSUFFICIENT_DATA cycle status
-
-Acceptance:
-- every alert shows metric, threshold, reason, and recommended check
-- alerts do not spam duplicates
-- missing/stale data reduces confidence instead of generating false certainty
-
----
-
-## Phase 8 — Cycle History & Comparison
-
-Goal: make each completed cycle improve the next one.
-
-Deliverables:
-- completed-cycle summary
-- compare cycles by pond/species
-- final SR/FCR/HPP/profit/margin
-- cost composition comparison
-- growth curve comparison
-- cycle duration comparison
-
-Acceptance:
-- user can answer which cycle was most efficient and why
-
----
-
-# MVP Release Definition — V1.0
-
-V1.0 is ready when a farmer can run one complete fish-production cycle entirely in the app:
-
-```text
-Create Pond
-   ↓
-Start Cycle
-   ↓
-Stock Fish
-   ↓
-Daily Feed / Mortality / Cost
-   ↓
-Weekly Sampling
-   ↓
-Automatic KPIs
-   ↓
-Alerts
-   ↓
-Partial / Final Harvest
-   ↓
-Actual HPP + Profit + Margin
-   ↓
-Completed Cycle History
+```powershell
+git pull
+npm install
+npm run db:bootstrap
+npm run typecheck
+npm run build
+npm run dev
 ```
 
-No spreadsheet should be required for the core workflow.
+Production end-to-end validation:
 
----
+```text
+Dashboard
+→ Daily Input
+→ Sampling
+→ Pond Detail
+→ Partial Harvest
+→ Final Harvest
+→ Decision Engine
+```
 
-# Post-MVP — V1.x
+Sales end-to-end validation:
 
-Candidates, prioritized from real usage:
+```text
+Sales Dashboard
+→ Create Lead
+→ Create Customer
+→ Create Sales Order before harvest
+→ Record Harvest
+→ Confirm HarvestLot appears
+→ Allocate HarvestLot to order
+→ Check available/allocated kg
+→ Verify seeded invoice/payment balances
+```
+
+Validation must include database reset/idempotent seed checks.
+
+## Phase 8 — Complete CRM Transaction Flow
+
+After V0.8 validation:
+
+- Opportunity management
+- lead conversion
+- CRM interaction timeline
+- follow-up reminders
+- delivery lifecycle
+- invoice generation from order/delivery
+- DP/partial/final payment recording
+- receivable aging
+- completed order history
+- customer purchase history
+- price history per customer
+- repeat order metrics
+
+## Phase 9 — Cycle & Business History
+
+Production:
+- completed-cycle summary
+- cycle comparison by pond/species
+- FCR/SR/HPP/profit comparison
+- cost composition comparison
+
+Commercial:
+- sales by customer
+- kg sold by customer
+- average selling price
+- customer margin contribution
+- repeat-order rate
+- receivable performance
+
+## V1.0 Release Definition
+
+V1.0 target expands beyond running a production cycle: it should cover a basic commercial close as well.
+
+```text
+Create/Run Production Cycle
+        ↓
+Daily Operations + Sampling
+        ↓
+KPI + Alerts
+        ↓
+Harvest
+        ↓
+HarvestLot
+        ↓
+Sales Order Fulfillment
+        ↓
+Delivery / Invoice
+        ↓
+Payment
+        ↓
+Production + Customer History
+```
+
+Core operation must not require spreadsheets.
+
+## Post-MVP Candidates
 
 - water-quality manual logs
-- pH / DO / temperature dashboard
-- feed inventory
+- pH / DO / temperature
+- feed inventory and procurement
 - supplier management
 - Telegram alerts
-- PWA offline drafts and sync
-- multi-user roles
-- photos/attachments
-- PDF cycle report
-- better harvest projection
+- PWA offline drafts/sync
+- multi-user authorization
+- attachments/photos
+- PDF cycle/invoice reports
+- WhatsApp CRM integration
+- sales forecast vs projected harvest
 
----
+## V2 / Data-Maturity Candidates
 
-# V2 Candidates
+Only after enough clean real data exists:
 
-Only after enough reliable operating data exists:
-
-- multi-farm support
-- benchmarking
+- multi-farm organization
+- biological benchmarking
 - AI daily farm summary
+- AI commercial daily summary
 - cross-cycle anomaly detection
-- predictive harvest-date model
+- predictive harvest date
+- demand forecasting
 - feed planning recommendations
-- IoT sensor ingestion
-- automated water-quality alerts
+- IoT ingestion
 
-AI/ML should be treated as a data maturity milestone, not a launch requirement.
-
----
-
-# Recommended Next Implementation Order
-
-1. Freeze V0.1 docs after review.
-2. Define UI navigation + wireframe screen contract.
-3. Convert domain model into PostgreSQL/ORM schema.
-4. Write formula unit tests before full dashboard implementation.
-5. Build farm/pond/cycle CRUD.
-6. Build daily input.
-7. Build sampling/KPI engine.
-8. Build finance/harvest.
-9. Build dashboard.
-10. Enable Decision Engine rules.
-
-This sequence ensures the visual dashboard is backed by correct source data rather than mock calculations.
+AI/ML remains a data-maturity milestone, not a substitute for production formulas, inventory allocations, invoices, or payments.
