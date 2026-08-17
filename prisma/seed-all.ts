@@ -1,8 +1,6 @@
 import "dotenv/config";
 import { spawnSync } from "node:child_process";
 
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-
 const seedScripts = [
   "prisma/seed.ts",
   "prisma/seed-finance-completion.ts",
@@ -13,12 +11,13 @@ for (const script of seedScripts) {
   console.log(`\n[seed-all] Running ${script}...`);
 
   const result = spawnSync(
-    npmCommand,
+    "npm",
     ["exec", "--", "tsx", script],
     {
       cwd: process.cwd(),
       env: process.env,
       stdio: "inherit",
+      shell: true,
     },
   );
 
