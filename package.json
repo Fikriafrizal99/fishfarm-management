@@ -21,7 +21,7 @@
     "db:constraints": "tsx scripts/apply-db-constraints.ts",
     "db:seed": "prisma db seed",
     "decision:evaluate": "tsx scripts/evaluate-alerts.ts",
-    "db:reset": "prisma db push --force-reset && npm run db:constraints && npm run db:seed && npm run decision:evaluate",
+    "db:reset": "npm run prisma:generate && prisma db push --force-reset && npm run db:constraints && npm run db:seed && npm run decision:evaluate",
     "db:bootstrap": "npm run db:up && npm run prisma:generate && npm run db:push && npm run db:constraints && npm run db:seed && npm run decision:evaluate"
   },
   "dependencies": {
