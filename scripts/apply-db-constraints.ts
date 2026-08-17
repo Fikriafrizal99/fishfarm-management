@@ -71,6 +71,98 @@ const statements = [
        ADD CONSTRAINT harvest_price_nonnegative CHECK (selling_price_per_kg >= 0);
    EXCEPTION WHEN duplicate_object THEN NULL;
    END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE leads
+       ADD CONSTRAINT lead_expected_demand_positive CHECK (expected_demand_kg IS NULL OR expected_demand_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE leads
+       ADD CONSTRAINT lead_expected_price_positive CHECK (expected_price_per_kg IS NULL OR expected_price_per_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE sales_opportunities
+       ADD CONSTRAINT opportunity_qty_positive CHECK (expected_qty_kg IS NULL OR expected_qty_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE sales_opportunities
+       ADD CONSTRAINT opportunity_price_positive CHECK (expected_price_per_kg IS NULL OR expected_price_per_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE customer_interactions
+       ADD CONSTRAINT interaction_target_required
+       CHECK (customer_id IS NOT NULL OR lead_id IS NOT NULL OR opportunity_id IS NOT NULL);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE sales_order_items
+       ADD CONSTRAINT sales_order_item_quantity_positive CHECK (quantity_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE sales_order_items
+       ADD CONSTRAINT sales_order_item_price_positive CHECK (unit_price_per_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE harvest_lots
+       ADD CONSTRAINT harvest_lot_quantity_positive CHECK (quantity_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE fulfillment_allocations
+       ADD CONSTRAINT fulfillment_allocation_positive CHECK (allocated_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE delivery_items
+       ADD CONSTRAINT delivery_item_quantity_positive CHECK (quantity_kg > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE invoices
+       ADD CONSTRAINT invoice_subtotal_nonnegative CHECK (subtotal_amount >= 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE invoices
+       ADD CONSTRAINT invoice_total_nonnegative CHECK (total_amount >= 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
+
+  `DO $$
+   BEGIN
+     ALTER TABLE payments
+       ADD CONSTRAINT payment_amount_positive CHECK (amount > 0);
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
 ];
 
 async function main() {
