@@ -32,9 +32,12 @@ function fcr(value: number | null): string {
   return value === null ? "—" : number2.format(value);
 }
 
-function statusLabel(status: "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION") {
+function statusLabel(
+  status: "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION" | "COMPLETED",
+) {
   if (status === "ON_TARGET") return "ON TARGET";
   if (status === "NEEDS_ATTENTION") return "NEEDS ATTENTION";
+  if (status === "COMPLETED") return "COMPLETED";
   return "MONITOR";
 }
 
@@ -57,10 +60,13 @@ function expenseLabel(category: string): string {
 
 export default async function PondDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ pondCode: string }>;
+  searchParams: Promise<{ harvestSaved?: string }>;
 }) {
   const { pondCode } = await params;
+  const query = await searchParams;
 
   let detail: Awaited<ReturnType<typeof getPondDetail>> = null;
   let databaseUnavailable = false;
@@ -90,6 +96,7 @@ export default async function PondDetailPage({
     );
   }
 
+  const isCompleted = detail.status === "COMPLETED";
   const maxAverageWeight = Math.max(
     ...detail.samplingTrend.map((point) => point.averageWeightG),
     1,
@@ -109,7 +116,7 @@ export default async function PondDetailPage({
         <Link className="backLink" href="/">← Dashboard</Link>
         <span
           className={`badge ${
-            detail.status === "ON_TARGET"
+            detail.status === "ON_TARGET" || detail.status === "COMPLETED"
               ? "good"
               : detail.status === "NEEDS_ATTENTION"
                 ? "danger"
@@ -120,6 +127,12 @@ export default async function PondDetailPage({
         </span>
       </div>
 
+      {query.harvestSaved === "1" ? (
+        <div className="notice successNotice">
+          Panen berhasil disimpan. KPI finansial dan biologis sudah dihitung ulang.
+        </div>
+      ) : null}
+
       <header className="detailHero">
         <div>
           <p className="eyebrow">{detail.farmName}</p>
@@ -128,22 +141,63 @@ export default async function PondDetailPage({
             {detail.pondName ?? "Kolam budidaya"} · Hari ke-{detail.day} · {detail.cycleCode}
           </p>
         </div>
-        <div className="heroActions">
-          <Link className="secondaryButton lightButton" href={`/sampling?cycleId=${detail.cycleId}`}>
-            + Sampling
-          </Link>
-          <Link className="heroAction" href={`/input?cycleId=${detail.cycleId}`}>
-            + Input Harian
-          </Link>
-        </div>
+        {!isCompleted ? (
+          <div className="heroActions">
+            <Link className="secondaryButton lightButton" href={`/sampling?cycleId=${detail.cycleId}`}>
+              + Sampling
+            </Link>
+            <Link className="secondaryButton lightButton" href={`/harvest?cycleId=${detail.cycleId}`}>
+              + Panen
+            </Link>
+            <Link className="heroAction" href={`/input?cycleId=${detail.cycleId}`}>
+              + Input Harian
+            </Link>
+          </div>
+        ) : null}
       </header>
 
-      <section className="metrics pondMetrics" aria-label="KPI kolam">
-        <article><span>Estimated SR</span><strong>{pct(detail.survivalRatePct)}</strong></article>
-        <article><span>ABW Terakhir</span><strong>{detail.latestAverageWeightG === null ? "—" : `${number0.format(detail.latestAverageWeightG)} g`}</strong></article>
-        <article><span>Estimasi Biomassa</span><strong>{detail.estimatedBiomassKg === null ? "—" : `${number1.format(detail.estimatedBiomassKg)} kg`}</strong></article>
-        <article><span>FCR</span><strong>{fcr(detail.fcr)}</strong></article>
-      </section>
+      {isCompleted ? (
+        <section className="metrics pondMetrics" aria-label="Hasil final siklus">
+          <article><span>Final SR</span><strong>{pct(detail.survivalRatePct)}</strong></article>
+          <article><span>Total Panen</span><strong>{number1.format(detail.harvestedBiomassKg)} kg</strong></article>
+          <article><span>Actual HPP</span><strong>{detail.actualHppPerKg === null ? "—" : currency.format(detail.actualHppPerKg)}</strong></article>
+          <article><span>Laba Bersih</span><strong>{detail.netProfit === null ? "—" : currency.format(detail.netProfit)}</strong></article>
+        </section>
+      ) : (
+        <section className="metrics pondMetrics" aria-label="KPI kolam">
+          <article><span>Estimated SR</span><strong>{pct(detail.survivalRatePct)}</strong></article>
+          <article><span>ABW Terakhir</span><strong>{detail.latestAverageWeightG === null ? "—" : `${number0.format(detail.latestAverageWeightG)} g`}</strong></article>
+          <article><span>Estimasi Biomassa</span><strong>{detail.estimatedBiomassKg === null ? "—" : `${number1.format(detail.estimatedBiomassKg)} kg`}</strong></article>
+          <article><span>FCR</span><strong>{fcr(detail.fcr)}</strong></article>
+        </section>
+      )}
+
+      {isCompleted ? (
+        <section className="panel finalResultPanel">
+          <div className="panelTitle">
+            <div>
+              <p className="eyebrow dark">Final Cycle Result</p>
+              <h2>Hasil aktual siklus</h2>
+            </div>
+            <span className="badge good">ACTUAL</span>
+          </div>
+          <div className="detailGrid">
+            <div><span>Omzet</span><strong>{currency.format(detail.revenueAmount)}</strong></div>
+            <div><span>Total biaya</span><strong>{currency.format(detail.totalCost)}</strong></div>
+            <div><span>Net profit</span><strong>{detail.netProfit === null ? "—" : currency.format(detail.netProfit)}</strong></div>
+            <div><span>Margin</span><strong>{pct(detail.marginPct)}</strong></div>
+            <div><span>Actual HPP/kg</span><strong>{detail.actualHppPerKg === null ? "—" : currency.format(detail.actualHppPerKg)}</strong></div>
+            <div><span>Final FCR</span><strong>{fcr(detail.fcr)}</strong></div>
+            <div><span>Panen biomassa</span><strong>{number1.format(detail.harvestedBiomassKg)} kg</strong></div>
+            <div><span>Selesai</span><strong>{detail.completedAt === null ? "—" : dateFormatter.format(detail.completedAt)}</strong></div>
+          </div>
+          {detail.survivalRatePct === null ? (
+            <p className="metricDisclaimer">
+              Final SR tidak ditampilkan karena jumlah ekor pada seluruh event panen tidak tercatat lengkap. Sistem tidak menebak SR dari berat panen.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="panel">
         <div className="panelTitle">
@@ -156,7 +210,7 @@ export default async function PondDetailPage({
 
         <div className="detailGrid">
           <div><span>Ikan tebar</span><strong>{number0.format(detail.stockedFish)} ekor</strong></div>
-          <div><span>Estimasi hidup</span><strong>{number0.format(detail.estimatedPopulation)} ekor</strong></div>
+          <div><span>{isCompleted ? "Sisa populasi" : "Estimasi hidup"}</span><strong>{number0.format(detail.estimatedPopulation)} ekor</strong></div>
           <div><span>Mortalitas</span><strong>{number0.format(detail.mortalityFish)} ekor · {pct(detail.mortalityRatePct)}</strong></div>
           <div><span>Pakan kumulatif</span><strong>{number1.format(detail.cumulativeFeedKg)} kg</strong></div>
           <div><span>Target FCR</span><strong>{fcr(detail.targetFcr)}</strong></div>
@@ -172,7 +226,9 @@ export default async function PondDetailPage({
             <p className="eyebrow dark">Growth Trend</p>
             <h2>Perkembangan bobot sampling</h2>
           </div>
-          <Link className="textLink" href={`/sampling?cycleId=${detail.cycleId}`}>Tambah sampling →</Link>
+          {!isCompleted ? (
+            <Link className="textLink" href={`/sampling?cycleId=${detail.cycleId}`}>Tambah sampling →</Link>
+          ) : null}
         </div>
 
         {detail.samplingTrend.length === 0 ? (
@@ -211,7 +267,9 @@ export default async function PondDetailPage({
           </div>
           <div className="moneyHero">{currency.format(detail.totalCost)}</div>
           <p className="metricDisclaimer">
-            Biaya per estimasi standing kg: {detail.currentCostPerStandingKg === null ? "—" : currency.format(detail.currentCostPerStandingKg)}
+            {isCompleted
+              ? `Actual HPP: ${detail.actualHppPerKg === null ? "—" : currency.format(detail.actualHppPerKg)}`
+              : `Biaya per estimasi standing kg: ${detail.currentCostPerStandingKg === null ? "—" : currency.format(detail.currentCostPerStandingKg)}`}
           </p>
           <div className="expenseList">
             {detail.expenseBreakdown.map((expense) => (
@@ -226,15 +284,26 @@ export default async function PondDetailPage({
         <article className="panel financeCard">
           <div className="panelTitle">
             <div>
-              <p className="eyebrow dark">Target Panen</p>
-              <h2>Progress siklus</h2>
+              <p className="eyebrow dark">{isCompleted ? "Realisasi Panen" : "Target Panen"}</p>
+              <h2>{isCompleted ? "Hasil penjualan" : "Progress siklus"}</h2>
             </div>
           </div>
           <div className="detailGrid compactGrid">
-            <div><span>Target biomassa</span><strong>{detail.targetHarvestWeightKg === null ? "—" : `${number1.format(detail.targetHarvestWeightKg)} kg`}</strong></div>
-            <div><span>Target tanggal</span><strong>{detail.targetHarvestDate === null ? "—" : dateFormatter.format(detail.targetHarvestDate)}</strong></div>
-            <div><span>Sisa hari</span><strong>{detail.daysToTargetHarvest === null ? "—" : detail.daysToTargetHarvest < 0 ? `Lewat ${Math.abs(detail.daysToTargetHarvest)} hari` : `${detail.daysToTargetHarvest} hari`}</strong></div>
-            <div><span>Status siklus</span><strong>{detail.cycleStatus}</strong></div>
+            {isCompleted ? (
+              <>
+                <div><span>Total panen</span><strong>{number1.format(detail.harvestedBiomassKg)} kg</strong></div>
+                <div><span>Omzet</span><strong>{currency.format(detail.revenueAmount)}</strong></div>
+                <div><span>Margin</span><strong>{pct(detail.marginPct)}</strong></div>
+                <div><span>Status siklus</span><strong>{detail.cycleStatus}</strong></div>
+              </>
+            ) : (
+              <>
+                <div><span>Target biomassa</span><strong>{detail.targetHarvestWeightKg === null ? "—" : `${number1.format(detail.targetHarvestWeightKg)} kg`}</strong></div>
+                <div><span>Target tanggal</span><strong>{detail.targetHarvestDate === null ? "—" : dateFormatter.format(detail.targetHarvestDate)}</strong></div>
+                <div><span>Sisa hari</span><strong>{detail.daysToTargetHarvest === null ? "—" : detail.daysToTargetHarvest < 0 ? `Lewat ${Math.abs(detail.daysToTargetHarvest)} hari` : `${detail.daysToTargetHarvest} hari`}</strong></div>
+                <div><span>Status siklus</span><strong>{detail.cycleStatus}</strong></div>
+              </>
+            )}
           </div>
         </article>
       </section>
@@ -263,7 +332,7 @@ export default async function PondDetailPage({
         )}
       </section>
 
-      <footer>V0.5 · Detail kolam menghitung KPI dan growth trend langsung dari raw records.</footer>
+      <footer>V0.6 · Harvest & Sales menutup siklus dan menghasilkan KPI aktual.</footer>
     </main>
   );
 }
