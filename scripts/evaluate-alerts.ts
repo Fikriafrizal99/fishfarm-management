@@ -4,6 +4,14 @@ import { db } from "../src/lib/db";
 import { evaluateCycleAlerts } from "../src/application/decision/evaluate-cycle-alerts";
 
 async function main() {
+  const removedLegacy = await db.alert.deleteMany({
+    where: { ruleVersion: "dev-seed-v1" },
+  });
+
+  if (removedLegacy.count > 0) {
+    console.log(`Removed ${removedLegacy.count} legacy development alert(s).`);
+  }
+
   const cycles = await db.productionCycle.findMany({
     where: { status: { in: [CycleStatus.ACTIVE, CycleStatus.HARVESTING] } },
     select: { id: true, cycleCode: true },
