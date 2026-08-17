@@ -89,7 +89,10 @@ export async function recordSampling(
     });
 
     if (!cycle) throw new Error("Siklus budidaya tidak ditemukan");
-    if (![CycleStatus.ACTIVE, CycleStatus.HARVESTING].includes(cycle.status)) {
+    if (
+      cycle.status !== CycleStatus.ACTIVE &&
+      cycle.status !== CycleStatus.HARVESTING
+    ) {
       throw new Error("Sampling hanya dapat dicatat pada siklus aktif");
     }
 
