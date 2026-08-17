@@ -10,16 +10,13 @@ const seedScripts = [
 for (const script of seedScripts) {
   console.log(`\n[seed-all] Running ${script}...`);
 
-  const result = spawnSync(
-    "npm",
-    ["exec", "--", "tsx", script],
-    {
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: "inherit",
-      shell: true,
-    },
-  );
+  const command = `npm exec -- tsx ${script}`;
+  const result = spawnSync(command, {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: "inherit",
+    shell: true,
+  });
 
   if (result.error) {
     throw result.error;
