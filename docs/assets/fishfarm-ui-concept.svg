@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8fbfd"/><stop offset="1" stop-color="#eaf7f6"/></linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f9fa3"/><stop offset="1" stop-color="#087d91"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-opacity="0.16"/></filter>
+    <style>
+      .t{font-family:Inter,Arial,sans-serif;fill:#17324d}.w{font-family:Inter,Arial,sans-serif;fill:#fff}.muted{font-family:Inter,Arial,sans-serif;fill:#708397}.small{font-size:11px}.label{font-size:12px}.value{font-size:18px;font-weight:700}.h2{font-size:18px;font-weight:700}.card{fill:#fff;stroke:#dce9ee;stroke-width:1}.green{fill:#179b54}.red{fill:#dc4d4d}.blue{fill:#1784d5}.tealText{fill:#078b92}.line{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+    </style>
+  </defs>
+  <rect width="1440" height="900" fill="url(#bg)"/>
+  <g transform="translate(60 42)">
+    <rect width="70" height="70" rx="18" fill="url(#teal)"/>
+    <path d="M18 36c14-14 28-12 39 0-11 12-25 14-39 0Zm39 0 9-8v16Z" fill="#fff" opacity=".95"/>
+    <path d="M18 51c14-6 28-6 42 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+    <text x="92" y="32" class="t" font-size="34" font-weight="800">FishFarm Management</text>
+    <text x="92" y="61" class="muted" font-size="18">Aplikasi Budidaya Ikan • UI Concept</text>
+  </g>
+
+  <!-- PHONE 1 -->
+  <g transform="translate(38 145)" filter="url(#shadow)">
+    <rect width="320" height="690" rx="38" fill="#11181c"/>
+    <rect x="9" y="9" width="302" height="672" rx="31" fill="#f7fafb"/>
+    <rect x="9" y="9" width="302" height="142" rx="31" fill="url(#teal)"/>
+    <rect x="115" y="8" width="90" height="20" rx="10" fill="#11181c"/>
+    <text x="26" y="48" class="w" font-size="17" font-weight="700">FishFarm Management</text>
+    <text x="26" y="84" class="w" font-size="18" font-weight="700">Halo, Fikri 👋</text>
+    <text x="26" y="104" class="w" font-size="11" opacity=".85">Semangat budidayanya hari ini!</text>
+
+    <g transform="translate(22 125)">
+      <rect class="card" width="132" height="78" rx="13"/><text x="14" y="25" class="muted label">Kolam Aktif</text><text x="14" y="55" class="t value">6</text>
+      <rect class="card" x="144" width="132" height="78" rx="13"/><text x="158" y="25" class="muted label">Ikan Aktif</text><text x="158" y="55" class="t value">18.450</text>
+      <rect class="card" y="88" width="132" height="78" rx="13"/><text x="14" y="113" class="muted label">Biomassa</text><text x="14" y="143" class="t value">2.840 kg</text>
+      <rect class="card" x="144" y="88" width="132" height="78" rx="13"/><text x="158" y="113" class="muted label">Biaya Berjalan</text><text x="158" y="143" class="t value">Rp18,7 jt</text>
+    </g>
+
+    <g transform="translate(22 304)">
+      <rect class="card" width="86" height="67" rx="12"/><text x="12" y="23" class="muted small">Survival Rate</text><text x="12" y="48" class="green value">94,2%</text>
+      <rect class="card" x="95" width="86" height="67" rx="12"/><text x="107" y="23" class="muted small">Mortalitas</text><text x="107" y="48" class="red value">5,8%</text>
+      <rect class="card" x="190" width="86" height="67" rx="12"/><text x="202" y="23" class="muted small">FCR</text><text x="202" y="48" class="blue value">1,16</text>
+      <rect class="card" y="77" width="134" height="67" rx="12"/><text x="12" y="100" class="muted small">HPP Estimasi</text><text x="12" y="126" class="t" font-size="15" font-weight="700">Rp15.420/kg</text>
+      <rect class="card" x="143" y="77" width="133" height="67" rx="12"/><text x="155" y="100" class="muted small">Estimasi Margin</text><text x="155" y="126" class="green value">27%</text>
+    </g>
+    <text x="22" y="474" class="t" font-size="15" font-weight="700">Status Kolam</text>
+    <g transform="translate(22 487)">
+      <rect class="card" width="276" height="76" rx="13"/><circle cx="27" cy="28" r="17" fill="#d7f2ef"/><text x="55" y="23" class="t" font-size="13" font-weight="700">KLM-001 — Nila</text><rect x="198" y="10" width="65" height="20" rx="10" fill="#dcf7e7"/><text x="206" y="24" class="green" font-size="8" font-weight="700">ON TARGET</text><text x="55" y="45" class="muted small">Hari ke-64</text><text x="55" y="64" class="t small">SR 94%   FCR 1.14   270 g</text>
+      <rect class="card" y="86" width="276" height="76" rx="13"/><circle cx="27" cy="114" r="17" fill="#e6f2f8"/><text x="55" y="109" class="t" font-size="13" font-weight="700">KLM-002 — Nila</text><rect x="188" y="96" width="75" height="20" rx="10" fill="#ffe6e6"/><text x="194" y="110" class="red" font-size="8" font-weight="700">ATTENTION</text><text x="55" y="131" class="muted small">Hari ke-61</text><text x="55" y="150" class="t small">SR 87%   FCR 1.42   210 g</text>
+    </g>
+    <rect x="9" y="638" width="302" height="43" rx="0" fill="#fff"/><text x="32" y="664" class="tealText small" font-weight="700">Dashboard</text><text x="101" y="664" class="muted small">Kolam</text><text x="157" y="664" class="muted small">Input</text><text x="207" y="664" class="muted small">Keuangan</text><text x="271" y="664" class="muted small">Panen</text>
+  </g>
+
+  <!-- PHONE 2 -->
+  <g transform="translate(386 145)" filter="url(#shadow)">
+    <rect width="320" height="690" rx="38" fill="#11181c"/><rect x="9" y="9" width="302" height="672" rx="31" fill="#f7fafb"/><rect x="9" y="9" width="302" height="72" rx="31" fill="url(#teal)"/><rect x="115" y="8" width="90" height="20" rx="10" fill="#11181c"/>
+    <text x="25" y="53" class="w" font-size="22">‹</text><text x="111" y="52" class="w" font-size="17" font-weight="700">Detail Kolam</text>
+    <text x="23" y="111" class="t h2">KLM-001 — Nila</text><rect x="228" y="92" width="66" height="22" rx="11" fill="#dcf7e7"/><text x="236" y="107" class="green" font-size="8" font-weight="700">ON TARGET</text>
+    <g transform="translate(22 126)"><rect class="card" width="276" height="70" rx="13"/><text x="17" y="25" class="muted small">Ukuran</text><text x="17" y="48" class="t" font-size="13" font-weight="700">4 × 6 m</text><text x="105" y="25" class="muted small">Tebar</text><text x="105" y="48" class="t" font-size="13" font-weight="700">3.000 ekor</text><text x="202" y="25" class="muted small">Target</text><text x="202" y="48" class="t" font-size="13" font-weight="700">750 kg</text></g>
+    <g transform="translate(22 210)"><rect class="card" width="276" height="126" rx="13"/><text x="13" y="24" class="t" font-size="12" font-weight="700">Berat Rata-rata (g)</text><path class="line" stroke="#13a789" d="M18 100 L62 92 L104 79 L148 63 L194 43 L254 25"/><g fill="#13a789"><circle cx="18" cy="100" r="4"/><circle cx="62" cy="92" r="4"/><circle cx="104" cy="79" r="4"/><circle cx="148" cy="63" r="4"/><circle cx="194" cy="43" r="4"/><circle cx="254" cy="25" r="4"/></g><text x="218" y="44" class="t small" font-weight="700">270g</text></g>
+    <g transform="translate(22 349)"><rect class="card" width="276" height="126" rx="13"/><text x="13" y="24" class="t" font-size="12" font-weight="700">Survival Rate (%)</text><path class="line" stroke="#179b54" d="M18 49 L70 61 L122 66 L184 79 L254 86"/><text x="17" y="43" class="green small">100%</text><text x="227" y="80" class="green small">94%</text></g>
+    <g transform="translate(22 488)"><rect class="card" width="276" height="126" rx="13"/><text x="13" y="24" class="t" font-size="12" font-weight="700">FCR</text><path class="line" stroke="#1784d5" d="M18 94 L70 82 L122 68 L184 58 L254 51"/><text x="17" y="88" class="blue small">0.90</text><text x="227" y="45" class="blue small">1.14</text></g>
+    <rect x="22" y="628" width="276" height="42" rx="12" fill="#dff7e7"/><text x="40" y="654" class="green" font-size="13" font-weight="700">✓ Status: ON TARGET</text>
+  </g>
+
+  <!-- PHONE 3 -->
+  <g transform="translate(734 145)" filter="url(#shadow)">
+    <rect width="320" height="690" rx="38" fill="#11181c"/><rect x="9" y="9" width="302" height="672" rx="31" fill="#f7fafb"/><rect x="9" y="9" width="302" height="72" rx="31" fill="url(#teal)"/><rect x="115" y="8" width="90" height="20" rx="10" fill="#11181c"/>
+    <text x="25" y="53" class="w" font-size="22">‹</text><text x="111" y="52" class="w" font-size="17" font-weight="700">Input Harian</text>
+    <g transform="translate(22 96)">
+      <rect class="card" width="276" height="66" rx="13"/><text x="18" y="23" class="muted small">Tanggal</text><text x="18" y="46" class="t" font-size="13" font-weight="700">17 Agustus 2026</text>
+      <rect class="card" y="78" width="276" height="66" rx="13"/><text x="18" y="101" class="muted small">Kolam</text><text x="18" y="124" class="t" font-size="13" font-weight="700">KLM-001</text><text x="248" y="119" class="muted">⌄</text>
+      <rect class="card" y="156" width="276" height="66" rx="13"/><text x="18" y="179" class="muted small">Pakan Diberikan</text><text x="18" y="202" class="t" font-size="13" font-weight="700">18 kg</text>
+      <rect class="card" y="234" width="276" height="66" rx="13"/><text x="18" y="257" class="muted small">Ikan Mati</text><text x="18" y="280" class="t" font-size="13" font-weight="700">4 ekor</text>
+      <rect class="card" y="312" width="276" height="66" rx="13"/><text x="18" y="335" class="muted small">Obat / Probiotik</text><text x="18" y="358" class="t" font-size="13" font-weight="700">Rp25.000</text>
+      <rect class="card" y="390" width="276" height="92" rx="13"/><text x="18" y="413" class="muted small">Catatan</text><text x="18" y="440" class="t" font-size="12">Ikan aktif, nafsu makan normal</text>
+      <rect y="498" width="78" height="30" rx="15" fill="#def6f5"/><text x="16" y="518" class="tealText small">+ Pakan</text><rect x="90" y="498" width="91" height="30" rx="15" fill="#def6f5"/><text x="101" y="518" class="tealText small">+ Mortalitas</text><rect x="193" y="498" width="83" height="30" rx="15" fill="#def6f5"/><text x="210" y="518" class="tealText small">+ Biaya</text>
+      <rect y="548" width="276" height="48" rx="13" fill="url(#teal)"/><text x="98" y="578" class="w" font-size="14" font-weight="700">Simpan Data</text>
+    </g>
+  </g>
+
+  <!-- PHONE 4 -->
+  <g transform="translate(1082 145)" filter="url(#shadow)">
+    <rect width="320" height="690" rx="38" fill="#11181c"/><rect x="9" y="9" width="302" height="672" rx="31" fill="#f7fafb"/><rect x="9" y="9" width="302" height="72" rx="31" fill="url(#teal)"/><rect x="115" y="8" width="90" height="20" rx="10" fill="#11181c"/>
+    <text x="25" y="53" class="w" font-size="22">‹</text><text x="82" y="52" class="w" font-size="17" font-weight="700">Keuangan &amp; Panen</text>
+    <g transform="translate(22 96)"><rect class="card" width="276" height="282" rx="13"/><text x="16" y="29" class="t" font-size="14" font-weight="700">Rincian Biaya</text><text x="16" y="60" class="muted label">Benih</text><text x="182" y="60" class="t label">Rp2.250.000</text><text x="16" y="88" class="muted label">Pakan</text><text x="182" y="88" class="t label">Rp8.450.000</text><text x="16" y="116" class="muted label">Obat</text><text x="195" y="116" class="t label">Rp420.000</text><text x="16" y="144" class="muted label">Listrik</text><text x="195" y="144" class="t label">Rp550.000</text><text x="16" y="172" class="muted label">Tenaga Kerja</text><text x="177" y="172" class="t label">Rp1.500.000</text><text x="16" y="200" class="muted label">Lainnya</text><text x="195" y="200" class="t label">Rp380.000</text><path d="M16 218H260" stroke="#dce9ee"/><text x="16" y="250" class="t" font-size="14" font-weight="700">Total Biaya</text><text x="149" y="250" class="tealText" font-size="16" font-weight="800">Rp13.550.000</text></g>
+    <g transform="translate(22 392)"><rect width="276" height="205" rx="13" fill="#effaf1" stroke="#d5ecda"/><text x="16" y="29" class="t" font-size="14" font-weight="700">Hasil Panen</text><text x="16" y="60" class="muted label">Panen</text><text x="214" y="60" class="t label">810 kg</text><text x="16" y="88" class="muted label">Harga Jual</text><text x="177" y="88" class="t label">Rp23.000/kg</text><text x="16" y="116" class="muted label">Omzet</text><text x="171" y="116" class="t label">Rp18.630.000</text><path d="M16 132H260" stroke="#d5ecda"/><text x="16" y="158" class="green" font-size="13" font-weight="700">Laba</text><text x="178" y="158" class="green" font-size="14" font-weight="800">Rp5.080.000</text><text x="16" y="184" class="green" font-size="13" font-weight="700">Margin</text><text x="222" y="184" class="green" font-size="14" font-weight="800">27,3%</text></g>
+    <rect x="22" y="612" width="276" height="56" rx="12" fill="#e9f8f2"/><text x="42" y="636" class="green" font-size="12" font-weight="700">✓ Projected HPP: Rp16.728/kg</text><text x="42" y="653" class="muted" font-size="9">Estimasi HPP masih dalam kondisi baik</text>
+  </g>
+</svg>
