@@ -8,6 +8,12 @@ Turn daily fish-farming records into a simple operating system for farmers: **re
 
 The first version is intentionally not AI-first. Core calculations and alerts are deterministic and explainable. AI can be added later after enough real farm-cycle data exists.
 
+## UI Concept
+
+![FishFarm Management UI concept](docs/assets/fishfarm-ui-concept.svg)
+
+The mockup above is the initial visual direction for Dashboard, Pond Detail, Daily Input, and Finance & Harvest. See [`docs/UI_REFERENCE.md`](docs/UI_REFERENCE.md) for screen behavior and implementation guidance.
+
 ## V0.1 Scope
 
 The product foundation is documented before implementation:
@@ -17,6 +23,7 @@ The product foundation is documented before implementation:
 - Domain and data model
 - KPI/formula model
 - Rules-based Decision Engine
+- UI reference
 - MVP roadmap
 
 ## MVP Modules
@@ -65,6 +72,7 @@ The product foundation is documented before implementation:
 - [`docs/DOMAIN_MODEL.md`](docs/DOMAIN_MODEL.md)
 - [`docs/KPI_MODEL.md`](docs/KPI_MODEL.md)
 - [`docs/DECISION_ENGINE.md`](docs/DECISION_ENGINE.md)
+- [`docs/UI_REFERENCE.md`](docs/UI_REFERENCE.md)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ## Initial Technical Direction
