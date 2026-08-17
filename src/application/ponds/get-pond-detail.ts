@@ -1,0 +1,337 @@
+import {
+  AlertSeverity,
+  AlertStatus,
+  CycleStatus,
+} from "@/src/generated/prisma/client";
+import { db } from "@/src/lib/db";
+import {
+  calculateAverageWeightG,
+  calculateEstimatedBiomassKg,
+  calculateEstimatedPopulation,
+  calculateMortalityRatePct,
+  calculateSurvivalRatePct,
+} from "@/src/domain/kpi/biology";
+import {
+  calculateAdgGPerDay,
+  calculateBiomassGainKg,
+  calculateFcr,
+  calculateWeightGainG,
+} from "@/src/domain/kpi/growth";
+
+export type PondDetailStatus = "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION";
+
+export interface SamplingTrendPoint {
+  id: string;
+  sampledAt: Date;
+  sampleCount: number;
+  averageWeightG: number;
+  totalSampleWeightKg: number | null;
+  averageLengthCm: number | null;
+  weightGainG: number | null;
+  adgGPerDay: number | null;
+}
+
+export interface PondDetail {
+  pondId: string;
+  pondCode: string;
+  pondName: string | null;
+  pondType: string | null;
+  dimensions: {
+    lengthM: number | null;
+    widthM: number | null;
+    depthM: number | null;
+    volumeM3: number | null;
+  };
+  farmName: string;
+  cycleId: string;
+  cycleCode: string;
+  cycleStatus: CycleStatus;
+  species: string;
+  startedAt: Date | null;
+  targetHarvestDate: Date | null;
+  day: number;
+  daysToTargetHarvest: number | null;
+  stockedFish: number;
+  mortalityFish: number;
+  harvestedFishCount: number;
+  estimatedPopulation: number;
+  populationSource: "OBSERVED" | "ESTIMATED";
+  survivalRatePct: number | null;
+  mortalityRatePct: number | null;
+  latestAverageWeightG: number | null;
+  estimatedBiomassKg: number | null;
+  cumulativeFeedKg: number;
+  fcr: number | null;
+  targetFcr: number | null;
+  targetSrPct: number | null;
+  targetHarvestWeightKg: number | null;
+  totalCost: number;
+  currentCostPerStandingKg: number | null;
+  status: PondDetailStatus;
+  samplingTrend: SamplingTrendPoint[];
+  expenseBreakdown: Array<{ category: string; amount: number }>;
+  alerts: Array<{
+    id: string;
+    severity: string;
+    title: string;
+    message: string;
+    recommendedAction: string | null;
+    triggeredAt: Date;
+  }>;
+}
+
+function toNumber(value: unknown): number {
+  return value === null || value === undefined ? 0 : Number(value);
+}
+
+function dayOfCycle(startedAt: Date | null, now: Date): number {
+  if (!startedAt) return 0;
+  return Math.max(1, Math.floor((now.getTime() - startedAt.getTime()) / 86_400_000) + 1);
+}
+
+function daysUntil(target: Date | null, now: Date): number | null {
+  if (!target) return null;
+  return Math.ceil((target.getTime() - now.getTime()) / 86_400_000);
+}
+
+function determineStatus(input: {
+  sr: number | null;
+  targetSr: number | null;
+  fcr: number | null;
+  targetFcr: number | null;
+  hasActionAlert: boolean;
+}): PondDetailStatus {
+  if (input.hasActionAlert) return "NEEDS_ATTENTION";
+  if (
+    (input.sr !== null && input.targetSr !== null && input.sr < input.targetSr) ||
+    (input.fcr !== null && input.targetFcr !== null && input.fcr > input.targetFcr)
+  ) {
+    return "NEEDS_ATTENTION";
+  }
+  if (input.sr === null || input.fcr === null) return "MONITOR";
+  return "ON_TARGET";
+}
+
+const includeCycle = {
+  pond: { include: { farm: true } },
+  species: true,
+  stockings: true,
+  mortalityLogs: true,
+  feedingLogs: true,
+  samplingLogs: { orderBy: { sampledAt: "asc" as const } },
+  harvests: true,
+  expenses: true,
+  alerts: {
+    where: { status: AlertStatus.OPEN },
+    orderBy: { triggeredAt: "desc" as const },
+  },
+} as const;
+
+export async function getPondDetail(
+  pondCode: string,
+  now = new Date(),
+): Promise<PondDetail | null> {
+  const normalizedCode = pondCode.trim().toUpperCase();
+
+  const cycle =
+    (await db.productionCycle.findFirst({
+      where: {
+        pond: { code: normalizedCode },
+        status: { in: [CycleStatus.ACTIVE, CycleStatus.HARVESTING] },
+      },
+      include: includeCycle,
+      orderBy: { createdAt: "desc" },
+    })) ??
+    (await db.productionCycle.findFirst({
+      where: { pond: { code: normalizedCode } },
+      include: includeCycle,
+      orderBy: { createdAt: "desc" },
+    }));
+
+  if (!cycle) return null;
+
+  const stockedFish = cycle.stockings.reduce((sum, item) => sum + item.quantity, 0);
+  const mortalityFish = cycle.mortalityLogs.reduce((sum, item) => sum + item.quantity, 0);
+  const harvestedFishCount = cycle.harvests.reduce(
+    (sum, item) => sum + (item.fishCount ?? 0),
+    0,
+  );
+
+  const calculatedPopulation = calculateEstimatedPopulation(
+    stockedFish,
+    mortalityFish,
+    harvestedFishCount,
+  );
+
+  const samplingTrend: SamplingTrendPoint[] = cycle.samplingLogs.map((sample, index) => {
+    const averageWeightG =
+      sample.averageWeightG !== null
+        ? toNumber(sample.averageWeightG)
+        : calculateAverageWeightG(toNumber(sample.totalSampleWeightKg), sample.sampleCount);
+
+    const previous = index > 0 ? cycle.samplingLogs[index - 1] : null;
+    let previousAverageWeightG: number | null = null;
+
+    if (previous) {
+      previousAverageWeightG =
+        previous.averageWeightG !== null
+          ? toNumber(previous.averageWeightG)
+          : calculateAverageWeightG(
+              toNumber(previous.totalSampleWeightKg),
+              previous.sampleCount,
+            );
+    }
+
+    return {
+      id: sample.id,
+      sampledAt: sample.sampledAt,
+      sampleCount: sample.sampleCount,
+      averageWeightG,
+      totalSampleWeightKg:
+        sample.totalSampleWeightKg === null
+          ? null
+          : toNumber(sample.totalSampleWeightKg),
+      averageLengthCm:
+        sample.averageLengthCm === null ? null : toNumber(sample.averageLengthCm),
+      weightGainG:
+        previousAverageWeightG === null
+          ? null
+          : calculateWeightGainG(averageWeightG, previousAverageWeightG),
+      adgGPerDay:
+        previousAverageWeightG === null || !previous
+          ? null
+          : calculateAdgGPerDay(
+              averageWeightG,
+              previousAverageWeightG,
+              sample.sampledAt,
+              previous.sampledAt,
+            ),
+    };
+  });
+
+  const latestSample = cycle.samplingLogs.at(-1) ?? null;
+  const latestTrend = samplingTrend.at(-1) ?? null;
+  const observedPopulation = latestSample?.observedPopulation ?? null;
+  const estimatedPopulation = observedPopulation ?? calculatedPopulation;
+  const populationSource = observedPopulation === null ? "ESTIMATED" : "OBSERVED";
+
+  const survivalRatePct = calculateSurvivalRatePct(
+    estimatedPopulation + harvestedFishCount,
+    stockedFish,
+  );
+  const mortalityRatePct = calculateMortalityRatePct(mortalityFish, stockedFish);
+
+  const latestAverageWeightG = latestTrend?.averageWeightG ?? null;
+  const estimatedBiomassKg =
+    latestAverageWeightG === null
+      ? null
+      : calculateEstimatedBiomassKg(estimatedPopulation, latestAverageWeightG);
+
+  const initialBiomassKnown =
+    cycle.stockings.length > 0 && cycle.stockings.every((item) => item.avgWeightG !== null);
+  const initialBiomassKg = initialBiomassKnown
+    ? cycle.stockings.reduce(
+        (sum, item) => sum + (item.quantity * toNumber(item.avgWeightG)) / 1000,
+        0,
+      )
+    : null;
+
+  const harvestedBiomassKg = cycle.harvests.reduce(
+    (sum, item) => sum + toNumber(item.weightKg),
+    0,
+  );
+  const cumulativeFeedKg = cycle.feedingLogs.reduce(
+    (sum, item) => sum + toNumber(item.quantityKg),
+    0,
+  );
+
+  const biomassGainKg =
+    estimatedBiomassKg === null || initialBiomassKg === null
+      ? null
+      : calculateBiomassGainKg({
+          standingBiomassKg: estimatedBiomassKg,
+          harvestedBiomassKg,
+          initialBiomassKg,
+        });
+  const fcr = biomassGainKg === null ? null : calculateFcr(cumulativeFeedKg, biomassGainKg);
+
+  const totalCost = cycle.expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
+  const currentCostPerStandingKg =
+    estimatedBiomassKg !== null && estimatedBiomassKg > 0
+      ? totalCost / estimatedBiomassKg
+      : null;
+
+  const expenseMap = new Map<string, number>();
+  for (const expense of cycle.expenses) {
+    expenseMap.set(
+      expense.category,
+      (expenseMap.get(expense.category) ?? 0) + toNumber(expense.amount),
+    );
+  }
+
+  const targetFcr = cycle.targetFcr === null ? null : toNumber(cycle.targetFcr);
+  const targetSrPct = cycle.targetSrPct === null ? null : toNumber(cycle.targetSrPct);
+  const hasActionAlert = cycle.alerts.some(
+    (alert) => alert.severity === AlertSeverity.ACTION_REQUIRED,
+  );
+
+  return {
+    pondId: cycle.pond.id,
+    pondCode: cycle.pond.code,
+    pondName: cycle.pond.name,
+    pondType: cycle.pond.pondType,
+    dimensions: {
+      lengthM: cycle.pond.lengthM === null ? null : toNumber(cycle.pond.lengthM),
+      widthM: cycle.pond.widthM === null ? null : toNumber(cycle.pond.widthM),
+      depthM: cycle.pond.depthM === null ? null : toNumber(cycle.pond.depthM),
+      volumeM3: cycle.pond.volumeM3 === null ? null : toNumber(cycle.pond.volumeM3),
+    },
+    farmName: cycle.pond.farm.name,
+    cycleId: cycle.id,
+    cycleCode: cycle.cycleCode,
+    cycleStatus: cycle.status,
+    species: cycle.species.commonName,
+    startedAt: cycle.startedAt,
+    targetHarvestDate: cycle.targetHarvestDate,
+    day: dayOfCycle(cycle.startedAt, now),
+    daysToTargetHarvest: daysUntil(cycle.targetHarvestDate, now),
+    stockedFish,
+    mortalityFish,
+    harvestedFishCount,
+    estimatedPopulation,
+    populationSource,
+    survivalRatePct,
+    mortalityRatePct,
+    latestAverageWeightG,
+    estimatedBiomassKg,
+    cumulativeFeedKg,
+    fcr,
+    targetFcr,
+    targetSrPct,
+    targetHarvestWeightKg:
+      cycle.targetHarvestWeightKg === null
+        ? null
+        : toNumber(cycle.targetHarvestWeightKg),
+    totalCost,
+    currentCostPerStandingKg,
+    status: determineStatus({
+      sr: survivalRatePct,
+      targetSr: targetSrPct,
+      fcr,
+      targetFcr,
+      hasActionAlert,
+    }),
+    samplingTrend,
+    expenseBreakdown: [...expenseMap.entries()]
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount),
+    alerts: cycle.alerts.map((alert) => ({
+      id: alert.id,
+      severity: alert.severity,
+      title: alert.title,
+      message: alert.message,
+      recommendedAction: alert.recommendedAction,
+      triggeredAt: alert.triggeredAt,
+    })),
+  };
+}
