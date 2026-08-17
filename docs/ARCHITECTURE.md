@@ -1,270 +1,347 @@
 # System Architecture — FishFarm Management
 
-Version: 0.1
+Version: 0.8
 
 ## 1. Architecture Goal
 
-Build a mobile-first farm operating system that connects daily field input, biological performance, financial performance, harvest outcomes, and explainable operational alerts.
+Build one mobile-first farm operating system with two explicit business domains:
 
-The first implementation uses a **modular monolith**. This is intentionally simpler than microservices while keeping domain boundaries explicit enough to split later if scale requires it.
+- **Aquaculture Production**
+- **Sales CRM**
+
+The system remains a **modular monolith**. This keeps deployment and development simple while preserving boundaries that prevent production, inventory, and CRM logic from becoming one tangled module.
 
 ## 2. High-Level Architecture
 
 ```text
 [PWA / Mobile Browser]
-        |
-        v
-[Next.js Web Application]
-        |
-        +-----------------------------+
-        | UI / Forms / Dashboard      |
-        | Auth / Session              |
-        | API / Server Actions        |
-        +-----------------------------+
-        |
-        v
+          |
+          v
+[Next.js Application]
+          |
+          +-------------------------------+
+          | Production UI                 |
+          | Sales CRM UI                  |
+          | Server Actions                |
+          | Auth / Session later          |
+          +-------------------------------+
+          |
+          v
 [Application Service Layer]
-        |
-        +-- Farm & Pond Service
-        +-- Cycle Service
-        +-- Daily Operation Service
-        +-- Sampling & Growth Service
-        +-- Costing Service
-        +-- Harvest Service
-        +-- KPI Calculation Service
-        +-- Decision Engine
-        +-- Notification Service
-        |
-        v
-[PostgreSQL]
-        |
-        +-- master data
-        +-- transactional logs
-        +-- cycle snapshots
-        +-- KPI snapshots
-        +-- alerts
+          |
+          +-- Production
+          |    +-- Daily Operations
+          |    +-- Sampling & Growth
+          |    +-- Costing
+          |    +-- Harvest
+          |    +-- KPI
+          |    +-- Decision Engine
+          |
+          +-- Sales CRM
+               +-- Lead / Customer
+               +-- Opportunity
+               +-- Sales Order
+               +-- Fulfillment
+               +-- Delivery
+               +-- Invoice / Payment
+          |
+          v
+[PostgreSQL + Prisma]
 ```
 
-## 3. Architectural Layers
+## 3. Critical Domain Boundary
 
-### Presentation Layer
+The main architectural rule introduced in V0.8:
+
+```text
+ProductionCycle
+      ↓
+   Harvest
+      ↓
+ HarvestLot
+      ↓
+FulfillmentAllocation
+      ↑
+SalesOrderItem
+      ↑
+ SalesOrder
+```
+
+CRM objects above SalesOrderItem do not depend on Pond or ProductionCycle.
+
+This means:
+- a Lead can exist with no production capacity assigned,
+- a SalesOrder can exist before fish are harvested,
+- one order can use several harvest lots,
+- one harvest lot can serve several orders.
+
+## 4. Presentation Layer
+
+### Production Area
+
+Routes include:
+- `/`
+- `/input`
+- `/sampling`
+- `/ponds/[pondCode]`
+- `/harvest`
 
 Responsibilities:
-- mobile-first dashboard
-- pond and cycle views
-- daily input forms
-- sampling form
-- expense form
-- harvest form
-- alerts and explanations
-- historical cycle comparison
-
-The interface must work well on a phone before desktop optimization.
-
-### Application Layer
-
-Coordinates use cases without embedding database-specific logic in UI components.
-
-Examples:
-- `createProductionCycle()`
-- `recordDailyFeeding()`
-- `recordMortality()`
-- `recordSampling()`
-- `recordExpense()`
-- `closeCycleWithHarvest()`
-- `recalculateCycleMetrics()`
-- `evaluateCycleAlerts()`
-
-### Domain Layer
-
-Contains business concepts and rules:
-- farm
-- pond
-- species
-- production cycle
-- stocking
-- feed
-- mortality
-- sampling
-- biomass
-- expenses
+- daily farm operations
+- biological KPI visibility
+- production finance
 - harvest
-- KPI
 - alerts
 
-Core formulas belong here or in a dedicated calculation module, not directly inside UI components.
+### Sales Area
 
-### Persistence Layer
+Routes include:
+- `/sales`
+- `/sales/leads`
+- `/sales/customers`
+- `/sales/orders`
+- `/sales/fulfillment`
 
-PostgreSQL is the source of truth. Spreadsheet storage is explicitly out of scope.
+Responsibilities:
+- demand/pipeline
+- accounts
+- orders
+- harvested-stock commitment
+- receivables summary
 
-All operational records should have:
-- stable ID
-- farm/cycle relationship
-- event date/time
-- created timestamp
-- creator/user ID when multi-user support exists
+Future Sales pages add Opportunity, Delivery, Invoice, and Payment write flows.
 
-## 4. Domain Boundaries
+## 5. Application Layer
 
-### Farm Management
-Owns farms, ponds, pond metadata, and operational status.
+Application services coordinate transactions and validation.
 
-### Production Cycle
-Owns stocking, start/end dates, target harvest, cycle status, and cycle lifecycle.
+Production examples:
 
-### Operations
-Owns daily feed, mortality, treatment/probiotic use, notes, and routine activities.
+```text
+recordDailyInput()
+recordSampling()
+recordHarvest()
+evaluateCycleAlerts()
+getPondDetail()
+getDashboardOverview()
+```
 
-### Biology
-Owns sampling, average body weight, population estimate, biomass estimate, growth trend, and survival metrics.
+Sales examples:
 
-### Finance
-Owns expense categories, production cost, HPP, revenue, profit, margin, and break-even calculations.
+```text
+recordLead()
+recordCustomer()
+recordSalesOrder()
+allocateOrderItem()
+getSalesDashboard()
+getFulfillmentWorkspace()
+```
+
+UI components do not own business calculations or cross-row inventory rules.
+
+## 6. Production Domain
+
+Owns:
+- Farm operational context
+- Pond
+- ProductionCycle
+- Stocking
+- Feeding
+- Mortality
+- Sampling
+- Treatment
+- production Expense
+- Harvest
+- KPI
+- Decision Engine Alert
+
+ProductionCycle remains the primary production analysis unit.
+
+### Production consistency
+
+Raw production events are authoritative.
+
+Derived values include:
+- estimated population
+- SR
+- mortality rate
+- ABW
+- biomass
+- FCR
+- current cost/kg
+- Actual HPP after final harvest
+
+## 7. Sales CRM Domain
+
+Owns:
+- Customer
+- Lead
+- SalesOpportunity
+- CustomerInteraction
+- SalesOrder
+- SalesOrderItem
+- Delivery
+- Invoice
+- Payment
+
+CRM does not own biological production metrics.
+
+## 8. Integration / Inventory Boundary
 
 ### Harvest
-Owns partial/final harvest events, harvested quantity, weight, selling price, buyer, and revenue.
 
-### Decision Engine
-Reads facts from other domains but does not own their source records. It produces explainable alerts and recommendations.
+Production fact.
 
-## 5. Recommended Technology Baseline
+### HarvestLot
 
-### Frontend
-- Next.js
-- TypeScript
-- responsive PWA
-- component-based design system
-- chart library for KPI trends
+Sellable-inventory representation created from Harvest.
 
-### Backend
-Start inside the same Next.js project using server-side modules/API routes/server actions. Domain and service modules must remain framework-light so extraction is possible later.
+New Harvest writes create Harvest + HarvestLot in the same database transaction.
 
-### Database
-- PostgreSQL
-- Prisma or Drizzle ORM
-- migrations committed to repository
+### FulfillmentAllocation
 
-### Authentication
-MVP:
-- one owner/admin account is sufficient for initial personal/farm use
+Only integration bridge between order demand and harvested supply.
 
-Later:
-- owner
-- manager
-- operator
-- viewer
+The service validates:
+- farm equality
+- species equality
+- remaining order quantity
+- available lot quantity
 
-### Deployment
-Prefer managed services for V1:
-- web/PWA hosting
-- managed PostgreSQL
-- object storage only when photos/documents are introduced
+Available inventory is derived rather than independently edited.
 
-## 6. Data Flow Example — Daily Feeding
+## 9. Financial Boundary
+
+There are two distinct financial contexts.
+
+### Production Cost
+
+Canonical source:
 
 ```text
-User opens KLM-001
-      |
-      v
-Input 18 kg feed
-      |
-      v
-Validation
-- cycle ACTIVE?
-- feed amount > 0?
-- date valid?
-      |
-      v
-Save feeding_log
-      |
-      v
-Recalculate
-- cumulative feed
-- projected feed cost
-- current FCR if biomass data exists
-- projected HPP
-      |
-      v
-Decision Engine
-      |
-      +-- NORMAL
-      +-- WARNING
-      +-- ACTION_REQUIRED
-      |
-      v
-Dashboard updated
+Expense
 ```
 
-## 7. Calculation Strategy
+Used for:
+- production cost
+- HPP
+- profit analysis against the chosen commercial revenue source
 
-Never overwrite raw logs to store calculated values.
+### Commercial Billing & Collection
 
-Use three categories of data:
+Canonical future sources:
 
-1. **Raw facts** — feed, mortality, sampling, expenses, harvest.
-2. **Derived metrics** — SR, FCR, biomass, HPP, margin.
-3. **Snapshots** — optional stored KPI state at a point in time for performance/history.
+```text
+Invoice
+Payment
+```
 
-Every KPI shown to the user must be reproducible from raw facts plus documented formulas.
+Do not add Harvest revenue + Invoice revenue together without a transition rule because V0.8 still retains legacy Harvest commercial snapshots for compatibility.
 
-## 8. Offline / Poor Connectivity Direction
+## 10. Transitional Harvest Fields
 
-Not required for first coding milestone, but architecture should avoid blocking it.
+V0.7 Harvest already includes:
+- selling price/kg
+- buyer name
+- revenue amount
 
-Future PWA behavior:
-- cache application shell
-- allow local draft of field input
+V0.8 keeps them temporarily.
+
+Reason:
+- avoid destructive schema change before runtime validation,
+- preserve completed-cycle calculations,
+- allow explicit migration planning after CRM flow is validated.
+
+Future architecture should settle on CRM as commercial source of truth and define how historical Harvest snapshots are retained.
+
+## 11. Decision Engine Boundary
+
+Decision Engine reads production records and KPIs only.
+
+It does not read lead/order/payment data to redefine biological state.
+
+```text
+Production Event
+   ↓
+KPI Calculation
+   ↓
+Decision Rules
+   ↓
+Alert
+```
+
+Future business alerts such as overdue invoice reminders should live in a commercial alert/rule module rather than biological Decision Engine rules.
+
+## 12. Persistence Layer
+
+PostgreSQL is the source of truth.
+
+Prisma schema includes both domains in one database while preserving explicit foreign-key boundaries.
+
+Benefits at current scale:
+- simple local development
+- strongly consistent Harvest + HarvestLot transaction
+- strongly consistent order allocations
+- one deployment
+- easy reporting across domains when intentionally needed
+
+This is not a reason to merge domain logic in application code.
+
+## 13. Offline / Poor Connectivity Direction
+
+Future PWA support:
+- cache app shell
+- local draft for field input
 - sync when online
-- prevent duplicate submissions with client-generated idempotency keys
+- client-generated idempotency keys
 
-## 9. Notification Architecture
+Production field input has higher offline priority than CRM administration.
 
-V1: alerts visible inside the app.
+## 14. Notifications
 
-Later adapters:
+Potential adapters:
 
 ```text
-Decision Engine
-      |
-      v
-Notification Service
-  |      |      |
- App  Telegram WhatsApp/Push
+Production Decision Engine ─┐
+                            ├─ Notification Service → App / Telegram / WhatsApp / Push
+Commercial Reminder Rules ──┘
 ```
 
-Notification channels must not contain business logic; they only deliver alerts created by the engine.
+Notification adapters deliver already-created events; they do not own business rules.
 
-## 10. Security & Audit Principles
+## 15. Security & Audit
 
-- validate authorization server-side
-- never trust calculated values sent from client
-- money calculations use decimal-safe types
-- historical harvest/financial records should be auditable
-- destructive changes require explicit confirmation
+- authorization enforced server-side
+- never trust calculated client values
+- decimal-safe persisted money
+- transactional fulfillment allocation
+- completed production and commercial records should be auditable
 - secrets stay in environment variables
-- database migrations are version controlled
+- migration history is version controlled before staging/production
 
-## 11. Scaling Strategy
+## 16. Scaling Strategy
 
-Do not start with microservices.
+Do not split into microservices now.
 
-Possible future extraction order only when justified:
+Potential extraction only when justified:
 1. notification worker
-2. analytics/reporting worker
-3. IoT ingestion service
-4. AI advisory service
+2. reporting/analytics worker
+3. IoT ingestion
+4. AI advisory/summarization
 
-Core farm/cycle transactions should remain strongly consistent.
+Production, inventory allocation, invoice, and payment transactions should remain strongly consistent.
 
-## 12. Non-Goals for MVP
+## 17. AI Boundary
 
-- IoT sensors
-- camera-based fish counting
-- automatic disease diagnosis
-- machine-learning feed optimization
-- accounting/ERP replacement
-- marketplace integration
-- complex multi-company tenancy
+AI may later summarize:
+- farm condition
+- multiple alerts
+- customer pipeline
+- overdue follow-up
+- completed-cycle/commercial history
 
-These can be evaluated only after the operational data model is stable.
+AI cannot silently redefine:
+- FCR/SR/HPP formulas
+- inventory allocation
+- invoice values
+- payment balances
