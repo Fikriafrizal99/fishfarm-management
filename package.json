@@ -1,6 +1,6 @@
 {
   "name": "fishfarm-management",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -13,7 +13,14 @@
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:destroy": "docker compose down -v",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma db push --force-reset && prisma db seed",
+    "db:bootstrap": "npm run db:up && npm run prisma:generate && npm run db:push && npm run db:seed"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
@@ -30,6 +37,7 @@
     "@types/react-dom": "^19.2.0",
     "dotenv": "^17.0.0",
     "prisma": "^7.0.0",
+    "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   }
 }
