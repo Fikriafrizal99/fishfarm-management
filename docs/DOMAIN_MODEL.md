@@ -1,320 +1,383 @@
 # Domain & Data Model — FishFarm Management
 
-Version: 0.1
+Version: 0.8
 
-## 1. Modeling Principle
+## 1. Domain Principle
 
-The primary unit of analysis is the **Production Cycle**.
+FishFarm Management now has two primary business domains inside one modular monolith:
 
-A pond is a physical asset. A production cycle is a biological and financial operating period inside that pond. All feeding, mortality, sampling, expenses, and harvest records should be attributable to a cycle whenever possible.
+1. **Aquaculture Production**
+2. **Sales CRM**
+
+They share a farm/business context but have different responsibilities and source-of-truth rules.
+
+Production remains centered on **ProductionCycle**. Sales CRM remains centered on **Customer demand and commercial transactions**.
+
+The domains connect only through harvested inventory fulfillment.
+
+```text
+PRODUCTION                                  SALES CRM
+
+Farm                                        Farm
+  ↓                                           ↓
+Pond                                        Lead
+  ↓                                           ↓
+ProductionCycle                             Customer
+  ↓                                           ↓
+Stocking / Feed / Sampling                  Opportunity
+  ↓                                           ↓
+Harvest                                     SalesOrder
+  ↓                                           ↓
+HarvestLot        ← FulfillmentAllocation → SalesOrderItem
+                                               ↓
+                                            Delivery
+                                               ↓
+                                            Invoice
+                                               ↓
+                                            Payment
+```
+
+## 2. Production Aggregate
+
+A pond is a physical asset. A production cycle is the biological and financial operating period inside a pond.
 
 ```text
 Farm
-  |
-  +-- Pond
-       |
-       +-- ProductionCycle
-             |
-             +-- Stocking
-             +-- FeedingLog
-             +-- MortalityLog
-             +-- SamplingLog
-             +-- TreatmentLog
-             +-- Expense
-             +-- Harvest
-             +-- KPISnapshot
-             +-- Alert
+  └── Pond
+       └── ProductionCycle
+            ├── Stocking
+            ├── FeedingLog
+            ├── MortalityLog
+            ├── SamplingLog
+            ├── TreatmentLog
+            ├── Expense
+            ├── Harvest
+            ├── KpiSnapshot
+            └── Alert
 ```
 
-## 2. Core Entities
+Production rules from earlier versions remain valid:
 
-## Farm
+- raw events are authoritative,
+- cumulative feed is derived,
+- mortality percentages are derived,
+- biomass is calculated from population + ABW,
+- FCR uses biomass gain,
+- Expense is the canonical production-cost ledger,
+- partial harvest must not be interpreted as mortality,
+- completed-cycle values must distinguish actual final from estimates.
 
-Represents the farm/business scope.
+## 3. Production Entities
 
-Suggested fields:
-- `id` UUID
+### Farm
+
+Business scope shared by both production and commercial data.
+
+Core fields:
+- `id`
 - `name`
-- `owner_user_id`
-- `location_text` optional
-- `timezone` default `Asia/Jakarta`
-- `currency` default `IDR`
-- `created_at`
-- `updated_at`
+- `location_text`
+- `timezone`
+- `currency`
 
-## Pond
+### Pond
 
-Represents one physical pond/tank/unit.
+Physical pond/tank/unit.
 
-Suggested fields:
-- `id` UUID
-- `farm_id` FK
-- `code` unique within farm, e.g. `KLM-001`
-- `name`
-- `pond_type`
-- `length_m` optional
-- `width_m` optional
-- `depth_m` optional
-- `volume_m3` optional
-- `status`: `ACTIVE | INACTIVE | MAINTENANCE`
-- `notes` optional
-- `created_at`
-- `updated_at`
+A pond can have many historical production cycles, but only one `ACTIVE` or `HARVESTING` cycle in the MVP.
 
-Constraint:
-- one pond may have many historical cycles
-- only one `ACTIVE` cycle per pond in MVP
+### Species
 
-## Species
+Master species data shared by production and Sales CRM product-interest/order lines.
 
-Reference/master data.
+Using Species in CRM does **not** create a dependency on a specific pond/cycle.
 
-Suggested fields:
-- `id`
-- `common_name` e.g. `Nila`
-- `scientific_name` optional
-- `default_unit`
-- `active`
+### ProductionCycle
 
-MVP may seed species rather than expose a full species admin module.
+Central production aggregate.
 
-## ProductionCycle
+Owns biological targets, production lifecycle, and all cycle raw records.
 
-Central aggregate for one farming cycle.
+### Stocking
 
-Suggested fields:
-- `id` UUID
-- `farm_id` FK
-- `pond_id` FK
-- `species_id` FK
-- `cycle_code`, e.g. `KLM-001-2026-01`
-- `status`: `PLANNED | ACTIVE | HARVESTING | COMPLETED | CANCELLED`
-- `stocking_date`
-- `target_harvest_date` optional
-- `completed_at` optional
-- `initial_stock_qty`
-- `initial_avg_weight_g` optional
-- `initial_biomass_kg` derived or snapshot
-- `target_sr_pct` optional
-- `target_fcr` optional
-- `target_harvest_weight_kg` optional
-- `target_hpp_per_kg` optional
-- `target_selling_price_per_kg` optional
-- `notes` optional
-- `created_at`
-- `updated_at`
+Raw fish-stocking event.
 
-## Stocking
+### FeedingLog
 
-Stores stocking event details separately from cycle configuration when more traceability is needed.
+Raw feed event. Cumulative feed is derived.
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `event_date`
-- `quantity`
-- `avg_weight_g` optional
-- `seed_cost_per_unit` optional
-- `total_seed_cost`
-- `supplier` optional
-- `notes` optional
+### MortalityLog
 
-For MVP one initial stocking event is sufficient, but the model should not prevent later restocking events.
+Raw mortality observation.
 
-## FeedingLog
+### SamplingLog
 
-One feed event.
+Biological sample used for ABW, growth, population context, biomass, and FCR.
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `event_at`
-- `feed_type_id` optional
-- `quantity_kg`
-- `unit_cost_per_kg` optional
-- `total_cost` optional/derived
-- `notes` optional
-- `created_by`
-- `created_at`
+### TreatmentLog
 
-Do not store cumulative feed here. Cumulative values are derived.
+Treatment/probiotic/health operation record.
 
-## FeedType
+### Expense
 
-Optional master data, useful once inventory/cost tracking expands.
+Canonical production-cost ledger.
 
-Fields:
-- `id`
-- `farm_id`
-- `name`
-- `brand` optional
-- `protein_pct` optional
-- `default_unit_cost` optional
-- `active`
+Operational records may create one linked Expense using `source_type/source_id` to prevent double counting.
 
-## MortalityLog
+### Harvest
 
-One mortality observation/event.
+Production fact representing partial/final harvest.
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `event_at`
-- `quantity`
-- `suspected_cause` optional
-- `notes` optional
-- `created_by`
-- `created_at`
+A Harvest is **not a SalesOrder**.
 
-Do not store mortality percentage as raw data.
+V0.8 retains legacy commercial snapshot fields on Harvest for compatibility:
+- `selling_price_per_kg`
+- `revenue_amount`
+- `buyer_name`
 
-## SamplingLog
+These will be reviewed after runtime validation and migration planning.
 
-One biological sampling event.
+### KpiSnapshot
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `sampled_at`
-- `sample_count`
-- `total_sample_weight_kg` optional
-- `average_weight_g` optional
-- `average_length_cm` optional
-- `observed_population` optional
-- `notes` optional
-- `created_by`
-- `created_at`
+Optional calculated cache/audit snapshot. Raw records remain authoritative.
 
-Rule:
-- at least one of `total_sample_weight_kg` or `average_weight_g` must be provided
-- if both are provided, server validates reasonable consistency
+### Alert
 
-## TreatmentLog
+Decision Engine output with `OPEN / ACKNOWLEDGED / RESOLVED` lifecycle.
 
-Operational health/treatment event.
+## 4. Sales CRM Aggregate
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `event_at`
-- `treatment_type`
-- `product_name` optional
-- `quantity` optional
-- `unit` optional
-- `cost` optional
-- `reason` optional
-- `notes` optional
+Sales CRM handles relationships, demand, commercial commitments, fulfillment, billing, and collection.
 
-## Expense
+```text
+Lead
+  ↓
+Customer
+  ↓
+SalesOpportunity
+  ↓
+SalesOrder
+  └── SalesOrderItem
+         ↓
+FulfillmentAllocation
+         ↑
+HarvestLot
 
-Financial transaction attributable to farming operations.
+SalesOrder
+  ├── Delivery
+  └── Invoice
+       └── Payment
+```
 
-Suggested fields:
-- `id`
-- `farm_id`
-- `cycle_id` optional for shared farm cost
-- `pond_id` optional
-- `expense_date`
-- `category`
-- `description`
-- `amount`
-- `allocation_type`: `DIRECT | SHARED`
-- `notes` optional
-- `created_at`
+The important boundary rule is:
 
-MVP direct categories:
-- `SEED`
-- `FEED`
-- `MEDICINE`
-- `PROBIOTIC`
-- `ELECTRICITY`
-- `WATER`
-- `LABOR`
-- `MAINTENANCE`
-- `TRANSPORT`
+> Lead, Customer, Opportunity, and SalesOrder do not point directly to Pond or ProductionCycle.
+
+## 5. Customer
+
+Represents a known buyer/account.
+
+Customer types:
+- `RESTAURANT`
+- `WHOLESALER`
+- `RETAILER`
+- `MARKET`
+- `HOTEL`
+- `CATERING`
+- `INDIVIDUAL`
 - `OTHER`
 
-Important implementation decision:
-Feed and seed costs must not be double-counted if a feeding/stocking log already creates corresponding expenses. Use one canonical approach in implementation:
+Typical fields:
+- name
+- contact person
+- phone
+- WhatsApp
+- email
+- address
+- active status
+- notes
 
-**Recommended:** operational events optionally create linked financial transactions via `source_type/source_id`.
+Customer can have many opportunities, interactions, and sales orders.
 
-## Harvest
+## 6. Lead
 
-Represents partial or final harvest.
+Represents potential demand before a committed transaction exists.
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `harvested_at`
-- `harvest_type`: `PARTIAL | FINAL`
-- `fish_count` optional
-- `weight_kg`
-- `selling_price_per_kg`
-- `revenue` derived/snapshotted
-- `buyer_name` optional
-- `harvest_cost` optional
-- `notes` optional
-- `created_at`
+Lifecycle:
 
-A cycle may have multiple partial harvests and one final closing event.
+```text
+NEW → CONTACTED → QUALIFIED → CONVERTED
+                         ↘ LOST
+```
 
-## KPISnapshot
+A Lead can optionally reference `Species` as product interest, but never a production cycle.
 
-Optional optimization/audit table. Raw data remains authoritative.
+Fields include:
+- title
+- source
+- contact details
+- expected demand kg
+- expected price/kg
+- next follow-up
+- notes
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `snapshot_at`
-- `estimated_population`
-- `survival_rate_pct`
-- `mortality_rate_pct`
-- `avg_weight_g`
-- `estimated_biomass_kg`
-- `cumulative_feed_kg`
-- `fcr`
-- `total_cost`
-- `estimated_hpp_per_kg`
-- `projected_revenue` optional
-- `projected_margin_pct` optional
-- `calculation_version`
+## 7. SalesOpportunity
 
-## Alert
+Qualified commercial opportunity associated with a Customer.
 
-Output of Decision Engine.
+Can store:
+- expected quantity kg
+- expected selling price/kg
+- expected close date
+- species interest
+- status `OPEN | WON | LOST`
 
-Suggested fields:
-- `id`
-- `cycle_id`
-- `rule_code`
-- `severity`: `INFO | WARNING | ACTION_REQUIRED`
-- `status`: `OPEN | ACKNOWLEDGED | RESOLVED`
-- `title`
-- `message`
-- `metric_name` optional
-- `metric_value` optional
-- `threshold_value` optional
-- `recommended_action` optional
-- `triggered_at`
-- `resolved_at` optional
-- `rule_version`
+Pipeline value is derived from quantity × expected price when both exist.
 
-## User / Membership
+## 8. CustomerInteraction
 
-MVP can support one owner, but schema should not block future roles.
+Commercial activity history.
 
-Suggested fields:
-- `User`
-- `FarmMembership`
+Types:
+- `WHATSAPP`
+- `CALL`
+- `MEETING`
+- `EMAIL`
+- `NOTE`
 
-Roles later:
-- `OWNER`
-- `MANAGER`
-- `OPERATOR`
-- `VIEWER`
+At least one CRM target must exist:
+- customer,
+- lead,
+- opportunity.
 
-## 3. Relationship Model
+It can also store `next_follow_up_at`.
+
+## 9. SalesOrder
+
+Represents a customer commitment.
+
+Lifecycle:
+
+```text
+DRAFT
+  ↓
+CONFIRMED
+  ↓
+PARTIALLY_FULFILLED
+  ↓
+FULFILLED
+
+or CANCELLED
+```
+
+SalesOrder can exist before harvested inventory exists.
+
+It references Customer and optionally Opportunity, but not Pond/ProductionCycle.
+
+## 10. SalesOrderItem
+
+Commercial product line.
+
+Current V0.8 fields:
+- species
+- description
+- quantity kg
+- unit price/kg
+
+Order value is derived from line quantity × unit price.
+
+## 11. HarvestLot
+
+Sellable harvested-inventory lot created from one Harvest.
+
+```text
+HarvestLot → Harvest → ProductionCycle → Pond
+```
+
+That path preserves source traceability without forcing SalesOrder to depend on production internals.
+
+Important fields:
+- `harvest_id` unique
+- `farm_id`
+- `species_id`
+- `lot_code`
+- `quantity_kg`
+- optional quality grade
+
+Each newly recorded Harvest creates a HarvestLot in the same transaction.
+
+## 12. FulfillmentAllocation
+
+Explicit integration bridge:
+
+```text
+SalesOrderItem ← FulfillmentAllocation → HarvestLot
+```
+
+Allocation statuses:
+- `RESERVED`
+- `FULFILLED`
+- `CANCELLED`
+
+Application-service validation checks:
+- same farm,
+- same species,
+- allocation does not exceed remaining order quantity,
+- allocation does not exceed available HarvestLot quantity.
+
+Available harvested stock is derived:
+
+```text
+HarvestLot quantity - active allocation quantity
+```
+
+## 13. Delivery
+
+Physical delivery/hand-over record linked to SalesOrder.
+
+Delivery items reference SalesOrderItem quantities.
+
+Lifecycle:
+- `PLANNED`
+- `DISPATCHED`
+- `DELIVERED`
+- `CANCELLED`
+
+## 14. Invoice
+
+Billing snapshot linked to SalesOrder.
+
+Stored totals intentionally preserve historical billing even if an order is corrected later through an explicit flow.
+
+Lifecycle:
+- `DRAFT`
+- `ISSUED`
+- `PARTIALLY_PAID`
+- `PAID`
+- `VOID`
+
+## 15. Payment
+
+Cash receipt against an Invoice.
+
+Multiple Payment records support:
+- DP,
+- partial payment,
+- final settlement.
+
+Methods:
+- cash
+- transfer
+- QRIS
+- other
+
+Outstanding receivable is derived:
+
+```text
+invoice total - sum(payment amount)
+```
+
+## 16. Relationship Model
 
 ```mermaid
 erDiagram
@@ -329,61 +392,70 @@ erDiagram
     PRODUCTION_CYCLE ||--o{ TREATMENT_LOG : receives
     PRODUCTION_CYCLE ||--o{ EXPENSE : incurs
     PRODUCTION_CYCLE ||--o{ HARVEST : produces
-    PRODUCTION_CYCLE ||--o{ KPI_SNAPSHOT : summarizes
-    PRODUCTION_CYCLE ||--o{ ALERT : triggers
+    HARVEST ||--o| HARVEST_LOT : creates
+
+    FARM ||--o{ CUSTOMER : owns
+    FARM ||--o{ LEAD : tracks
+    CUSTOMER ||--o{ SALES_OPPORTUNITY : has
+    CUSTOMER ||--o{ SALES_ORDER : places
+    SALES_ORDER ||--o{ SALES_ORDER_ITEM : contains
+    SPECIES ||--o{ SALES_ORDER_ITEM : requested_as
+    HARVEST_LOT ||--o{ FULFILLMENT_ALLOCATION : supplies
+    SALES_ORDER_ITEM ||--o{ FULFILLMENT_ALLOCATION : fulfilled_by
+    SALES_ORDER ||--o{ DELIVERY : ships
+    DELIVERY ||--o{ DELIVERY_ITEM : contains
+    SALES_ORDER ||--o{ INVOICE : billed_by
+    INVOICE ||--o{ PAYMENT : receives
 ```
 
-## 4. Source-of-Truth Rules
+## 17. Source-of-Truth Rules
 
-### Population
-Initial stock quantity minus recorded mortalities minus known harvested fish count when population count is available.
+### Production
+- population: stocking/mortality/known harvest counts
+- biomass: latest reliable ABW × current population context
+- feed: FeedingLog
+- production cost: Expense
+- production KPI: raw production records
 
-Because harvest fish count may be unknown, population estimates must be labeled **estimated** when exact subtraction is impossible.
+### Commercial
+- prospect pipeline: Lead / SalesOpportunity
+- customer commitment: SalesOrderItem
+- harvested inventory: HarvestLot
+- physical stock commitment: FulfillmentAllocation
+- billing: Invoice
+- cash receipt: Payment
 
-### Biomass
-Latest reliable ABW × estimated live population.
+### Critical Boundary
 
-Harvested biomass is kept separately from standing biomass.
+Sales CRM cannot silently redefine:
+- SR,
+- FCR,
+- biomass,
+- production cost,
+- cycle biological state.
 
-### Feed
-Sum of feeding logs by cycle.
+Production cannot infer a commercial order merely because a Harvest has a legacy buyer-name snapshot.
 
-### Cost
-Sum of canonical financial transactions allocated to cycle.
+## 18. Audit & Precision
 
-### Revenue
-Sum of `harvest.weight_kg × harvest.selling_price_per_kg` adjusted only by explicit sales corrections.
+- IDs: UUID
+- money: PostgreSQL numeric/decimal
+- kg: fixed decimal
+- timestamps: timestamptz
+- business dates: date when time-of-day is irrelevant
 
-## 5. Precision Recommendations
+Historical production and commercial transactions should not be destructively rewritten without an explicit correction strategy.
 
-- money: fixed decimal / numeric, never binary floating point
-- kilograms: decimal with sufficient precision
-- percentages: calculate at runtime, store snapshot only when needed
-- timestamps: store UTC, display in farm timezone
-- dates like stocking/harvest day: domain date when time-of-day is not meaningful
+## 19. Next Model Extensions
 
-## 6. Audit Requirements
-
-Raw operational/financial records should keep:
-- created timestamp
-- updated timestamp
-- author where available
-
-For completed cycles:
-- prevent accidental destructive edits
-- significant corrections should be auditable
-- final KPI summary should record formula/calculation version
-
-## 7. Future Model Extensions
-
-Not required in MVP:
-- water quality readings (`pH`, `DO`, temperature, ammonia)
-- feed inventory lots
-- supplier purchase orders
-- disease events
-- medication protocols
-- photos
-- sensor devices
-- farm shared-cost allocation rules
-- sale invoice/payment status
-- multi-site organization model
+After runtime validation and real usage:
+- configurable CRM lead sources
+- quotation
+- multiple product grades/sizes
+- returns/claims
+- delivery proof
+- customer price history
+- customer profitability
+- supplier/feed inventory domain
+- water quality and sensor data
+- organization/multi-farm model
