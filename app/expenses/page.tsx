@@ -13,6 +13,19 @@ const dateInput = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", y
 const dateLabel = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric" });
 const currency = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 const categories = ["PROBIOTIC", "MEDICINE", "ELECTRICITY", "WATER", "LABOR", "MAINTENANCE", "TRANSPORT", "OTHER"] as const;
+const categoryLabels: Record<(typeof categories)[number], string> = {
+  PROBIOTIC: "Probiotik",
+  MEDICINE: "Obat & Vitamin",
+  ELECTRICITY: "Listrik & Pompa",
+  WATER: "Air",
+  LABOR: "Tenaga Kerja",
+  MAINTENANCE: "Pemeliharaan",
+  TRANSPORT: "Transport",
+  OTHER: "Lainnya",
+};
+function expenseCategoryLabel(category: string): string {
+  return category in categoryLabels ? categoryLabels[category as keyof typeof categoryLabels] : category;
+}
 
 export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ saved?: string; updated?: string; error?: string; cycleId?: string; edit?: string }> }) {
   const params = await searchParams;
@@ -39,15 +52,15 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
             <div className="workspaceCardHeader"><div><span>{editExpense ? "CORRECTION" : "NEW EXPENSE"}</span><h2>{editExpense ? `Edit biaya · ${editExpense.cycle?.pond.code ?? "Farm"}` : "Catat biaya operasional"}</h2></div>{editExpense ? <Link href="/expenses">Batal</Link> : <small>Raw production cost</small>}</div>
             {editExpense ? <input type="hidden" name="id" value={editExpense.id} /> : null}
             <div className="formSectionBlock"><h3>Siklus & waktu</h3><div className="compactFieldGrid two"><label><span>Kolam / Siklus</span><select name="cycleId" required disabled={Boolean(editExpense) || cycles.length === 0} defaultValue={selectedCycleId}><option value="">Pilih kolam</option>{cycles.map((cycle) => <option key={cycle.id} value={cycle.id}>{cycle.label}</option>)}</select></label><label><span>Tanggal biaya</span><input name={editExpense ? "expenseDate" : "eventDate"} type="date" defaultValue={editExpense ? dateInput.format(editExpense.expenseDate) : dateInput.format(new Date())} required /></label></div></div>
-            <div className="formSectionBlock"><h3>Komponen biaya</h3><div className="compactFieldGrid two"><label><span>Kategori</span><select name="category" defaultValue={editExpense?.category ?? "OTHER"}>{categories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label><label><span>Nominal biaya</span><div className="compactUnitInput money"><b>Rp</b><input name="amount" type="number" min="1" step="1" defaultValue={editExpense ? Number(editExpense.amount) : ""} placeholder="0" required /></div></label></div></div>
+            <div className="formSectionBlock"><h3>Komponen biaya</h3><div className="compactFieldGrid two"><label><span>Kategori</span><select name="category" defaultValue={editExpense?.category ?? "OTHER"}>{categories.map((category) => <option value={category} key={category}>{categoryLabels[category]}</option>)}</select></label><label><span>Nominal biaya</span><div className="compactUnitInput money"><b>Rp</b><input name="amount" type="number" min="1" step="1" defaultValue={editExpense ? Number(editExpense.amount) : ""} placeholder="0" required /></div></label></div></div>
             {editExpense ? <div className="formSectionBlock"><h3>Keterangan ledger</h3><label><span>Deskripsi</span><input name="description" required defaultValue={editExpense.description} /></label><label><span>Catatan</span><textarea name="notes" rows={3} defaultValue={editExpense.notes ?? ""} /></label></div> : <div className="formSectionBlock"><h3>Keterangan</h3><label><span>Catatan biaya</span><textarea name="notes" rows={3} placeholder="Pembelian probiotik, listrik pompa, transport, perbaikan aerasi, dll." /></label></div>}
             <div className="workspaceFormActions"><span>{editExpense ? "Koreksi hanya untuk source MANUAL pada siklus aktif." : "Expense menambah running cost siklus."}</span><button className="workspacePrimaryButton" type="submit" disabled={!editExpense && cycles.length === 0}>{editExpense ? "Simpan Koreksi" : "Simpan Biaya"}</button></div>
           </form>
-          <aside className="operationContextStack"><section className="workspaceCard operationContextCard"><div className="workspaceCardHeader"><div><span>COST EFFECT</span><h2>Dampak pencatatan</h2></div></div><div className="contextMetricList"><div><span>Running cost</span><strong>Raw ledger</strong></div><div><span>Biaya/kg biomassa</span><strong>Recalculated</strong></div><div><span>HPP final</span><strong>All-in cost</strong></div><div><span>Profit final</span><strong>Actual setelah selesai</strong></div></div></section></aside>
+          <aside className="operationContextStack"><section className="workspaceCard operationContextCard"><div className="workspaceCardHeader"><div><span>COST EFFECT</span><h2>Dampak pencatatan</h2></div></div><div className="contextMetricList"><div><span>Running cost</span><strong>Raw ledger</strong></div><div><span>Biaya/kg biomassa</span><strong>Dihitung ulang</strong></div><div><span>HPP final</span><strong>Total biaya aktual</strong></div><div><span>Profit final</span><strong>Aktual setelah selesai</strong></div></div></section></aside>
         </div>
 
         <section className="workspaceCard historyLedgerCard"><div className="sectionHeaderInline"><div><p className="eyebrow dark">MANUAL COST HISTORY</p><h2>Ledger Biaya Manual</h2></div><span className="mutedInline">{history?.expenses.length ?? 0} log</span></div><div className="dataTableWrap"><table className="dataTable"><thead><tr><th>Tanggal</th><th>Siklus</th><th>Kategori</th><th>Deskripsi</th><th>Nominal</th><th>Status</th><th></th></tr></thead><tbody>
-          {(history?.expenses.slice(0, 30) ?? []).map((row) => { const canEdit = !row.cycle || row.cycle.status === "ACTIVE" || row.cycle.status === "HARVESTING"; return <tr key={row.id}><td>{dateLabel.format(row.expenseDate)}</td><td>{row.cycle ? <><strong>{row.cycle.pond.code}</strong><br /><small>{row.cycle.cycleCode}</small></> : "Farm"}</td><td>{row.category}</td><td>{row.description}</td><td className="strongCell">{currency.format(Number(row.amount))}</td><td><span className={`statusBadge ${canEdit ? "warning" : "good"}`}>{canEdit ? "EDITABLE" : "LOCKED"}</span></td><td>{canEdit ? <Link className="tableAction" href={`/expenses?edit=${row.id}`}>Edit</Link> : "—"}</td></tr>; })}
+          {(history?.expenses.slice(0, 30) ?? []).map((row) => { const canEdit = !row.cycle || row.cycle.status === "ACTIVE" || row.cycle.status === "HARVESTING"; return <tr key={row.id}><td>{dateLabel.format(row.expenseDate)}</td><td>{row.cycle ? <><strong>{row.cycle.pond.code}</strong><br /><small>{row.cycle.cycleCode}</small></> : "Farm"}</td><td>{expenseCategoryLabel(row.category)}</td><td>{row.description}</td><td className="strongCell">{currency.format(Number(row.amount))}</td><td><span className={`statusBadge ${canEdit ? "warning" : "good"}`}>{canEdit ? "EDITABLE" : "LOCKED"}</span></td><td>{canEdit ? <Link className="tableAction" href={`/expenses?edit=${row.id}`}>Edit</Link> : "—"}</td></tr>; })}
           {(history?.expenses.length ?? 0) === 0 ? <tr><td colSpan={7}>Belum ada biaya manual.</td></tr> : null}
         </tbody></table></div></section>
       </div>
