@@ -1,7 +1,16 @@
 import Link from "next/link";
 
 type BudidayaTab = "overview" | "input" | "sampling" | "harvest" | "expenses";
-type SalesTab = "overview" | "leads" | "customers" | "orders" | "fulfillment";
+type SalesTab =
+  | "overview"
+  | "leads"
+  | "customers"
+  | "pipeline"
+  | "orders"
+  | "fulfillment"
+  | "deliveries"
+  | "invoices"
+  | "payments";
 
 type NavItem = {
   key: string;
@@ -60,28 +69,20 @@ export function BudidayaWorkspaceNav({ active }: { active: BudidayaTab }) {
 
 export function SalesWorkspaceNav({ active }: { active: SalesTab }) {
   return (
-    <>
-      <WorkspaceTabs
-        active={active}
-        ariaLabel="Navigasi Sales CRM"
-        items={[
-          { key: "overview", label: "Overview", href: "/sales" },
-          { key: "leads", label: "Leads", href: "/sales/leads" },
-          { key: "customers", label: "Customers", href: "/sales/customers" },
-          { key: "orders", label: "Orders", href: "/sales/orders" },
-          { key: "fulfillment", label: "Fulfillment", href: "/sales/fulfillment" },
-        ]}
-      />
-      <div className="workspaceRoadmapHint" aria-label="Modul Sales CRM berikutnya">
-        <span>Next commercial flow</span>
-        <strong>Pipeline</strong>
-        <i />
-        <strong>Delivery</strong>
-        <i />
-        <strong>Invoice</strong>
-        <i />
-        <strong>Payment</strong>
-      </div>
-    </>
+    <WorkspaceTabs
+      active={active}
+      ariaLabel="Navigasi Sales CRM"
+      items={[
+        { key: "overview", label: "Overview", href: "/sales" },
+        { key: "leads", label: "Leads", href: "/sales/leads" },
+        { key: "customers", label: "Customers", href: "/sales/customers" },
+        { key: "pipeline", label: "Pipeline", href: "/sales/pipeline" },
+        { key: "orders", label: "Orders", href: "/sales/orders" },
+        { key: "fulfillment", label: "Fulfillment", href: "/sales/fulfillment" },
+        { key: "deliveries", label: "Delivery", href: "/sales/deliveries" },
+        { key: "invoices", label: "Invoice", href: "/sales/invoices" },
+        { key: "payments", label: "Payment", href: "/sales/payments" },
+      ]}
+    />
   );
 }
