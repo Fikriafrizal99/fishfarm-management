@@ -20,6 +20,9 @@ export interface DashboardCycleRow {
   pondCode: string;
   species: string;
   day: number;
+  startedAt: Date | null;
+  targetHarvestDate: Date | null;
+  targetAverageWeightG: number | null;
   stockedFish: number;
   estimatedPopulation: number;
   populationIsEstimated: boolean;
@@ -230,6 +233,14 @@ export async function getDashboardOverview(
 
     const targetFcr = cycle.targetFcr === null ? null : toNumber(cycle.targetFcr);
     const targetSrPct = cycle.targetSrPct === null ? null : toNumber(cycle.targetSrPct);
+    const targetHarvestWeightKg =
+      cycle.targetHarvestWeightKg === null
+        ? null
+        : toNumber(cycle.targetHarvestWeightKg);
+    const targetAverageWeightG =
+      targetHarvestWeightKg !== null && estimatedPopulation > 0
+        ? (targetHarvestWeightKg / estimatedPopulation) * 1000
+        : null;
     const hasActionAlert = cycle.alerts.some(
       (alert) => alert.severity === AlertSeverity.ACTION_REQUIRED,
     );
@@ -242,6 +253,9 @@ export async function getDashboardOverview(
       pondCode: cycle.pond.code,
       species: cycle.species.commonName,
       day: dayOfCycle(cycle.startedAt, now),
+      startedAt: cycle.startedAt,
+      targetHarvestDate: cycle.targetHarvestDate,
+      targetAverageWeightG,
       stockedFish,
       estimatedPopulation,
       populationIsEstimated: hasHarvestWithoutCount,
