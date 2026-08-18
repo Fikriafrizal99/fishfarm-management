@@ -1,5 +1,6 @@
 import { AppFrame } from "@/app/_components/app-frame";
 import { UtilityWorkspaceNav } from "@/app/_components/workspace-nav";
+import { ExportMenu } from "@/app/_components/export-menu";
 import { getAppShellContext } from "@/src/application/navigation/get-app-shell-context";
 import { getReportOverview } from "@/src/application/reporting/get-report-overview";
 
@@ -17,6 +18,11 @@ function width(value: number, max: number): string { return `${max <= 0 ? 0 : Ma
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const params = await searchParams;
   const range = { from: rangeDate(params.from), to: rangeDate(params.to, true) };
+  const exportQuery = new URLSearchParams();
+  if (params.from) exportQuery.set("from", params.from);
+  if (params.to) exportQuery.set("to", params.to);
+  const suffix = exportQuery.size ? `?${exportQuery.toString()}` : "";
+
   let shell: Awaited<ReturnType<typeof getAppShellContext>> = null;
   let report: Awaited<ReturnType<typeof getReportOverview>> = null;
   let databaseError = false;
@@ -28,7 +34,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   return (
     <AppFrame active="lainnya" ownerName={shell?.ownerName ?? null} alertCount={shell?.openAlertCount ?? 0} activePonds={shell?.activePonds}>
       <div className="opsPage operationWorkspacePage">
-        <div className="workspaceHeadingRow"><div><p className="workspaceKicker">BUSINESS PERFORMANCE</p><h1>Laporan</h1><p>Performa produksi dan komersial dalam satu periode, dengan current snapshot untuk pipeline dan piutang.</p></div></div>
+        <div className="workspaceHeadingRow">
+          <div><p className="workspaceKicker">BUSINESS PERFORMANCE</p><h1>Laporan</h1><p>Performa produksi dan komersial dalam satu periode, dengan current snapshot untuk pipeline dan piutang.</p></div>
+          <div className="workspaceHeadingActions"><ExportMenu items={[{ label: "Laporan CSV", href: `/api/export/reports/csv${suffix}` }, { label: "Laporan PDF", href: `/api/export/reports/pdf${suffix}` }]} /></div>
+        </div>
         <UtilityWorkspaceNav active="reports" />
         <form className="reportFilterBar" method="get"><div><label><span>Dari</span><input type="date" name="from" defaultValue={params.from ?? ""} /></label><label><span>Sampai</span><input type="date" name="to" defaultValue={params.to ?? ""} /></label></div><div><a href="/reports">Semua data</a><button type="submit">Terapkan periode</button></div></form>
         {databaseError ? <div className="notice errorNotice">Database belum tersambung.</div> : null}
