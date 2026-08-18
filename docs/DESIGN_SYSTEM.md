@@ -123,6 +123,16 @@ Order:
 
 Do not use horizontal progress bars for growth history.
 
+## Growth Chart Rules
+
+The approved mockup is the chart-layout reference, but the plotted values must remain data-honest.
+
+- X-axis on pond detail follows observed sampling dates; a future harvest target must not stretch the chart domain and compress the observed points to the left.
+- `Target ABW estimasi` is interpolated on the same observed sampling dates using the derived target average weight and target harvest date.
+- A target/reference line is shown only when at least two sampling observations exist. One observation is a point, not a trend.
+- Dashboard may show a dashed `Target (ABW)` reference for the primary cycle when the same derivation is available.
+- Never invent intermediate biological targets solely to make the chart look like the mockup.
+
 ## Data Integrity Rule
 
 Visual fidelity must never require fabricated operational values.
@@ -156,5 +166,6 @@ Current reference implementation:
 - `app/page.tsx`
 - `app/ponds/[pondCode]/page.tsx`
 - `app/globals.css`
+- `app/pixel-pass.css`
 
 Remaining pages should reuse this visual system instead of introducing a second UI language.
