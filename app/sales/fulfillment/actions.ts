@@ -23,6 +23,7 @@ export async function submitAllocation(formData: FormData): Promise<void> {
     revalidatePath("/sales");
     revalidatePath("/sales/orders");
     revalidatePath("/sales/fulfillment");
+    revalidatePath("/sales/deliveries");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal membuat alokasi";
     redirect(`/sales/fulfillment?error=${encodeURIComponent(message)}`);
