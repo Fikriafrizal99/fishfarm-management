@@ -22,7 +22,11 @@ export default async function DeliveriesPage({ searchParams }: { searchParams: P
     databaseError = true;
   }
 
-  const openDeliveries = workspace.deliveries.filter((delivery) => ![DeliveryStatus.DELIVERED, DeliveryStatus.CANCELLED].includes(delivery.status)).length;
+  const openDeliveries = workspace.deliveries.filter(
+    (delivery) =>
+      delivery.status !== DeliveryStatus.DELIVERED &&
+      delivery.status !== DeliveryStatus.CANCELLED,
+  ).length;
 
   return (
     <div className="opsPage crmWorkspacePage">
