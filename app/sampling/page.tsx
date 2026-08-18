@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getActiveCycleOptions } from "@/src/application/cycles/get-active-cycle-options";
 import { getAppShellContext } from "@/src/application/navigation/get-app-shell-context";
 import { AppFrame } from "@/app/_components/app-frame";
-import { SamplingIcon } from "@/app/_components/icons";
+import { BudidayaWorkspaceNav } from "@/app/_components/workspace-nav";
 import { submitSampling } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -43,69 +43,94 @@ export default async function SamplingPage({
       alertCount={shell?.openAlertCount ?? 0}
       activePonds={shell?.activePonds}
     >
-      <div className="opsPage formWorkspacePage">
-        <div className="pageTitleRow formPageTitle">
+      <div className="opsPage operationWorkspacePage">
+        <div className="workspaceHeadingRow">
           <div>
-            <Link className="detailBackLink" href="/budidaya">← Kembali ke Budidaya</Link>
-            <h1>Sampling & Pertumbuhan</h1>
-            <p>Perbarui ABW, estimasi biomassa, growth trend, dan FCR dari hasil sampling.</p>
+            <p className="workspaceKicker">BUDIDAYA / BIOLOGI</p>
+            <h1>Sampling</h1>
+            <p>Perbarui bobot rata-rata, biomassa, populasi teramati, dan tren pertumbuhan.</p>
           </div>
-          <span className="statusBadge good"><SamplingIcon size={12} /> SAMPLING</span>
+          <div className="workspaceHeadingStats"><span><b>{cycles.length}</b> siklus aktif</span></div>
         </div>
+
+        <BudidayaWorkspaceNav active="sampling" />
 
         {params.saved === "1" ? <div className="notice successNotice">Sampling berhasil disimpan. KPI sudah dihitung ulang.</div> : null}
         {params.error ? <div className="notice errorNotice">{params.error}</div> : null}
         {databaseError ? <div className="notice errorNotice">Database belum tersambung. Form akan aktif setelah development database dijalankan.</div> : null}
 
-        <form action={submitSampling} className="workspaceCard inputForm operationalFormCard">
-          <label>
-            <span>Kolam / Siklus</span>
-            <select name="cycleId" required disabled={cycles.length === 0} defaultValue={selectedCycleId}>
-              <option value="">Pilih kolam</option>
-              {cycles.map((cycle) => <option key={cycle.id} value={cycle.id}>{cycle.label}</option>)}
-            </select>
-          </label>
+        <div className="workspaceSplit operationSplit">
+          <form action={submitSampling} className="workspaceCard operationalWorkspaceForm">
+            <div className="workspaceCardHeader">
+              <div><span>NEW OBSERVATION</span><h2>Catat hasil sampling</h2></div>
+              <small>Observed data</small>
+            </div>
 
-          <label>
-            <span>Tanggal sampling</span>
-            <input name="sampledDate" type="date" defaultValue={todayInJakarta()} required />
-          </label>
+            <div className="formSectionBlock">
+              <h3>Siklus & waktu</h3>
+              <div className="compactFieldGrid two">
+                <label>
+                  <span>Kolam / Siklus</span>
+                  <select name="cycleId" required disabled={cycles.length === 0} defaultValue={selectedCycleId}>
+                    <option value="">Pilih kolam</option>
+                    {cycles.map((cycle) => <option key={cycle.id} value={cycle.id}>{cycle.label}</option>)}
+                  </select>
+                </label>
+                <label><span>Tanggal sampling</span><input name="sampledDate" type="date" defaultValue={todayInJakarta()} required /></label>
+              </div>
+            </div>
 
-          <div className="formGrid">
-            <label>
-              <span>Jumlah ikan sampel</span>
-              <div className="inputWithUnit"><input name="sampleCount" type="number" min="1" step="1" placeholder="30" required /><b>ekor</b></div>
-            </label>
-            <label>
-              <span>Total berat sampel</span>
-              <div className="inputWithUnit"><input name="totalSampleWeightKg" type="number" min="0.001" step="0.001" placeholder="8.1" /><b>kg</b></div>
-            </label>
-          </div>
+            <div className="formSectionBlock">
+              <h3>Hasil sampel</h3>
+              <div className="compactFieldGrid two">
+                <label><span>Jumlah ikan sampel</span><div className="compactUnitInput"><input name="sampleCount" type="number" min="1" step="1" placeholder="30" required /><b>ekor</b></div></label>
+                <label><span>Total berat sampel</span><div className="compactUnitInput"><input name="totalSampleWeightKg" type="number" min="0.001" step="0.001" placeholder="8.1" /><b>kg</b></div></label>
+                <label><span>Bobot rata-rata</span><div className="compactUnitInput"><input name="averageWeightG" type="number" min="0.001" step="0.001" placeholder="270" /><b>g</b></div></label>
+                <label><span>Panjang rata-rata</span><div className="compactUnitInput"><input name="averageLengthCm" type="number" min="0.001" step="0.001" placeholder="18.5" /><b>cm</b></div></label>
+              </div>
+              <label><span>Populasi teramati (opsional)</span><div className="compactUnitInput"><input name="observedPopulation" type="number" min="1" step="1" placeholder="Isi jika ada penghitungan populasi" /><b>ekor</b></div></label>
+            </div>
 
-          <div className="formGrid">
-            <label>
-              <span>Bobot rata-rata (opsional)</span>
-              <div className="inputWithUnit"><input name="averageWeightG" type="number" min="0.001" step="0.001" placeholder="270" /><b>g</b></div>
-            </label>
-            <label>
-              <span>Panjang rata-rata (opsional)</span>
-              <div className="inputWithUnit"><input name="averageLengthCm" type="number" min="0.001" step="0.001" placeholder="18.5" /><b>cm</b></div>
-            </label>
-          </div>
+            <div className="formSectionBlock">
+              <h3>Catatan lapangan</h3>
+              <label><span>Catatan sampling</span><textarea name="notes" rows={3} placeholder="Ukuran relatif seragam, nafsu makan baik, tidak ada luka terlihat" /></label>
+            </div>
 
-          <label>
-            <span>Populasi teramati (opsional)</span>
-            <div className="inputWithUnit"><input name="observedPopulation" type="number" min="1" step="1" placeholder="Isi hanya jika ada penghitungan populasi" /><b>ekor</b></div>
-          </label>
+            <div className="workspaceInlineNotice neutral">
+              <strong>Validasi sampling:</strong>
+              <span>isi minimal total berat sampel atau bobot rata-rata. Jika keduanya diisi, server mengecek konsistensinya.</span>
+            </div>
 
-          <label>
-            <span>Catatan sampling</span>
-            <textarea name="notes" rows={4} placeholder="Contoh: ukuran relatif seragam, nafsu makan baik, tidak ada luka terlihat" />
-          </label>
+            <div className="workspaceFormActions">
+              <span>Data tersimpan sebagai observed measurement.</span>
+              <button className="workspacePrimaryButton" type="submit" disabled={cycles.length === 0}>Simpan Sampling</button>
+            </div>
+          </form>
 
-          <div className="infoBox"><strong>Validasi sampling</strong><span>Isi minimal total berat sampel atau bobot rata-rata. Jika keduanya diisi, server mengecek konsistensinya.</span></div>
-          <button className="primaryButton" type="submit" disabled={cycles.length === 0}>Simpan Sampling</button>
-        </form>
+          <aside className="operationContextStack">
+            <section className="workspaceCard operationContextCard">
+              <div className="workspaceCardHeader"><div><span>ACTIVE CYCLES</span><h2>Pilih kolam</h2></div></div>
+              <div className="cycleQuickList">
+                {cycles.map((cycle) => (
+                  <Link href={`/ponds/${encodeURIComponent(cycle.pondCode)}`} key={cycle.id}>
+                    <div><strong>{cycle.pondCode}</strong><small>{cycle.species}</small></div><b>›</b>
+                  </Link>
+                ))}
+                {cycles.length === 0 ? <div className="recordEmpty">Tidak ada siklus aktif.</div> : null}
+              </div>
+            </section>
+
+            <section className="workspaceCard operationContextCard">
+              <div className="workspaceCardHeader"><div><span>AFTER SAVE</span><h2>KPI yang diperbarui</h2></div></div>
+              <div className="contextMetricList">
+                <div><span>ABW</span><strong>Observed</strong></div>
+                <div><span>Biomassa</span><strong>Estimated</strong></div>
+                <div><span>FCR</span><strong>Recalculated</strong></div>
+                <div><span>Growth trend</span><strong>Updated</strong></div>
+              </div>
+            </section>
+          </aside>
+        </div>
       </div>
     </AppFrame>
   );
