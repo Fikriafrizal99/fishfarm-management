@@ -40,7 +40,7 @@ export function AppFrame({
   const farmHealthy = alertCount === 0;
 
   return (
-    <div className={`appFrame ${compact ? "appFrameUnified" : ""}`}>
+    <div className="appFrame" data-legacy-compact={compact ? "true" : undefined}>
       <header className="appTopbar">
         <div className="appBrand">
           <FishMark size={24} />
@@ -49,7 +49,7 @@ export function AppFrame({
         <div className="topbarMeta">
           <span className="topbarDate"><CalendarIcon size={16} />{dateFormatter.format(new Date())}</span>
           <span className="topbarDivider" />
-          <Link className="notificationIcon" href="/alerts" aria-label="Buka pusat alert">
+          <Link className={`notificationIcon ${active === "alert" ? "active" : ""}`} href="/alerts" aria-label="Buka pusat alert">
             <BellIcon size={17} />{alertCount > 0 ? <b>{alertCount}</b> : null}
           </Link>
           <div className="userMenu" aria-label={`Pengguna: ${firstName}`}><span className="avatar">{initial}</span><span>{firstName}</span></div>
