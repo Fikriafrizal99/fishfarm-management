@@ -1,5 +1,14 @@
 import Link from "next/link";
 import { getPondDetail } from "@/src/application/ponds/get-pond-detail";
+import { AppFrame } from "@/app/_components/app-frame";
+import { GrowthChart } from "@/app/_components/growth-chart";
+import {
+  CostIcon,
+  HarvestIcon,
+  InputIcon,
+  MoreIcon,
+  SamplingIcon,
+} from "@/app/_components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +32,22 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   month: "short",
   year: "numeric",
 });
+const shortDateFormatter = new Intl.DateTimeFormat("id-ID", {
+  timeZone: "Asia/Jakarta",
+  day: "2-digit",
+  month: "short",
+});
+const timeFormatter = new Intl.DateTimeFormat("id-ID", {
+  timeZone: "Asia/Jakarta",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+const dayKeyFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Jakarta",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 function pct(value: number | null): string {
   return value === null ? "—" : `${number1.format(value)}%`;
@@ -32,30 +57,43 @@ function fcr(value: number | null): string {
   return value === null ? "—" : number2.format(value);
 }
 
-function statusLabel(
-  status: "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION" | "COMPLETED",
-) {
+function statusLabel(status: "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION" | "COMPLETED") {
   if (status === "ON_TARGET") return "ON TARGET";
   if (status === "NEEDS_ATTENTION") return "NEEDS ATTENTION";
   if (status === "COMPLETED") return "COMPLETED";
   return "MONITOR";
 }
 
+function statusClass(status: "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION" | "COMPLETED") {
+  if (status === "ON_TARGET" || status === "COMPLETED") return "good";
+  if (status === "NEEDS_ATTENTION") return "danger";
+  return "warning";
+}
+
 function expenseLabel(category: string): string {
   const labels: Record<string, string> = {
     SEED: "Benih",
     FEED: "Pakan",
-    MEDICINE: "Obat",
+    MEDICINE: "Obat & Vitamin",
     PROBIOTIC: "Probiotik",
-    ELECTRICITY: "Listrik",
+    ELECTRICITY: "Listrik & Pompa",
     WATER: "Air",
     LABOR: "Tenaga kerja",
     MAINTENANCE: "Maintenance",
     TRANSPORT: "Transport",
     HARVEST: "Panen",
-    OTHER: "Lainnya",
+    OTHER: "Lain-lain",
   };
   return labels[category] ?? category;
+}
+
+function activityWhen(date: Date, now: Date): string {
+  const currentKey = dayKeyFormatter.format(now);
+  const activityKey = dayKeyFormatter.format(date);
+  if (activityKey === currentKey) return `Hari ini, ${timeFormatter.format(date)}`;
+  const yesterday = new Date(now.getTime() - 86_400_000);
+  if (activityKey === dayKeyFormatter.format(yesterday)) return `Kemarin, ${timeFormatter.format(date)}`;
+  return shortDateFormatter.format(date);
 }
 
 export default async function PondDetailPage({
@@ -79,29 +117,19 @@ export default async function PondDetailPage({
 
   if (!detail) {
     return (
-      <main className="shell">
-        <div className="topBar">
-          <Link className="backLink" href="/">← Dashboard</Link>
-        </div>
+      <main className="shell formShell">
+        <div className="topBar"><Link className="backLink" href="/">← Dashboard</Link></div>
         <section className="panel emptyState">
           <p className="eyebrow dark">Detail Kolam</p>
           <h1>{databaseUnavailable ? "Database belum tersambung" : "Kolam tidak ditemukan"}</h1>
-          <p>
-            {databaseUnavailable
-              ? "Jalankan development database terlebih dahulu saat laptop sudah tersedia."
-              : "Pastikan kode kolam dan siklus sudah tersedia di database."}
-          </p>
+          <p>{databaseUnavailable ? "Jalankan development database terlebih dahulu." : "Pastikan kode kolam tersedia di database."}</p>
         </section>
       </main>
     );
   }
 
   const isCompleted = detail.status === "COMPLETED";
-  const maxAverageWeight = Math.max(
-    ...detail.samplingTrend.map((point) => point.averageWeightG),
-    1,
-  );
-
+  const now = new Date();
   const dimensionText = [
     detail.dimensions.lengthM,
     detail.dimensions.widthM,
@@ -110,229 +138,187 @@ export default async function PondDetailPage({
     ? `${detail.dimensions.lengthM} × ${detail.dimensions.widthM} × ${detail.dimensions.depthM} m`
     : "Belum lengkap";
 
+  const observedSeries = {
+    label: "ABW (g)",
+    tone: "teal" as const,
+    points: detail.samplingTrend.map((point) => ({
+      date: point.sampledAt,
+      value: point.averageWeightG,
+      label: `${number0.format(point.averageWeightG)}g`,
+    })),
+  };
+
+  const targetSeries =
+    !isCompleted &&
+    detail.targetAverageWeightG !== null &&
+    detail.targetHarvestDate !== null &&
+    detail.samplingTrend.length > 0
+      ? {
+          label: "Target ABW estimasi",
+          tone: "muted" as const,
+          dashed: true,
+          points: [
+            {
+              date: detail.samplingTrend[0].sampledAt,
+              value: detail.samplingTrend[0].averageWeightG,
+            },
+            {
+              date: detail.targetHarvestDate,
+              value: detail.targetAverageWeightG,
+            },
+          ],
+        }
+      : null;
+
+  const expenseRows = detail.expenseBreakdown.slice(0, 4);
+
   return (
-    <main className="shell detailShell">
-      <div className="topBar">
-        <Link className="backLink" href="/">← Dashboard</Link>
-        <span
-          className={`badge ${
-            detail.status === "ON_TARGET" || detail.status === "COMPLETED"
-              ? "good"
-              : detail.status === "NEEDS_ATTENTION"
-                ? "danger"
-                : "warning"
-          }`}
-        >
-          {statusLabel(detail.status)}
-        </span>
-      </div>
+    <AppFrame active="budidaya" ownerName={null} alertCount={detail.alerts.length} compact>
+      <div className="opsPage pondDetailPage">
+        <Link className="detailBackLink" href="/">← Kembali ke Budidaya</Link>
 
-      {query.harvestSaved === "1" ? (
-        <div className="notice successNotice">
-          Panen berhasil disimpan. KPI finansial dan biologis sudah dihitung ulang.
-        </div>
-      ) : null}
-
-      <header className="detailHero">
-        <div>
-          <p className="eyebrow">{detail.farmName}</p>
-          <h1>{detail.pondCode} — {detail.species}</h1>
-          <p>
-            {detail.pondName ?? "Kolam budidaya"} · Hari ke-{detail.day} · {detail.cycleCode}
-          </p>
-        </div>
-        {!isCompleted ? (
-          <div className="heroActions">
-            <Link className="secondaryButton lightButton" href={`/sampling?cycleId=${detail.cycleId}`}>
-              + Sampling
-            </Link>
-            <Link className="secondaryButton lightButton" href={`/harvest?cycleId=${detail.cycleId}`}>
-              + Panen
-            </Link>
-            <Link className="heroAction" href={`/input?cycleId=${detail.cycleId}`}>
-              + Input Harian
-            </Link>
-          </div>
+        {query.harvestSaved === "1" ? (
+          <div className="notice successNotice">Panen berhasil disimpan. KPI finansial dan biologis sudah dihitung ulang.</div>
         ) : null}
-      </header>
 
-      {isCompleted ? (
-        <section className="metrics pondMetrics" aria-label="Hasil final siklus">
-          <article><span>Final SR</span><strong>{pct(detail.survivalRatePct)}</strong></article>
-          <article><span>Total Panen</span><strong>{number1.format(detail.harvestedBiomassKg)} kg</strong></article>
-          <article><span>Actual HPP</span><strong>{detail.actualHppPerKg === null ? "—" : currency.format(detail.actualHppPerKg)}</strong></article>
-          <article><span>Laba Bersih</span><strong>{detail.netProfit === null ? "—" : currency.format(detail.netProfit)}</strong></article>
-        </section>
-      ) : (
-        <section className="metrics pondMetrics" aria-label="KPI kolam">
-          <article><span>Estimated SR</span><strong>{pct(detail.survivalRatePct)}</strong></article>
-          <article><span>ABW Terakhir</span><strong>{detail.latestAverageWeightG === null ? "—" : `${number0.format(detail.latestAverageWeightG)} g`}</strong></article>
-          <article><span>Estimasi Biomassa</span><strong>{detail.estimatedBiomassKg === null ? "—" : `${number1.format(detail.estimatedBiomassKg)} kg`}</strong></article>
-          <article><span>FCR</span><strong>{fcr(detail.fcr)}</strong></article>
-        </section>
-      )}
-
-      {isCompleted ? (
-        <section className="panel finalResultPanel">
-          <div className="panelTitle">
-            <div>
-              <p className="eyebrow dark">Final Cycle Result</p>
-              <h2>Hasil aktual siklus</h2>
+        <div className="detailTitleRow">
+          <div>
+            <div className="titleWithStatus">
+              <h1>{detail.pondCode} — {detail.species}</h1>
+              <span className={`statusBadge ${statusClass(detail.status)}`}>{statusLabel(detail.status)}</span>
             </div>
-            <span className="badge good">ACTUAL</span>
-          </div>
-          <div className="detailGrid">
-            <div><span>Omzet</span><strong>{currency.format(detail.revenueAmount)}</strong></div>
-            <div><span>Total biaya</span><strong>{currency.format(detail.totalCost)}</strong></div>
-            <div><span>Net profit</span><strong>{detail.netProfit === null ? "—" : currency.format(detail.netProfit)}</strong></div>
-            <div><span>Margin</span><strong>{pct(detail.marginPct)}</strong></div>
-            <div><span>Actual HPP/kg</span><strong>{detail.actualHppPerKg === null ? "—" : currency.format(detail.actualHppPerKg)}</strong></div>
-            <div><span>Final FCR</span><strong>{fcr(detail.fcr)}</strong></div>
-            <div><span>Panen biomassa</span><strong>{number1.format(detail.harvestedBiomassKg)} kg</strong></div>
-            <div><span>Selesai</span><strong>{detail.completedAt === null ? "—" : dateFormatter.format(detail.completedAt)}</strong></div>
-          </div>
-          {detail.survivalRatePct === null ? (
-            <p className="metricDisclaimer">
-              Final SR tidak ditampilkan karena jumlah ekor pada seluruh event panen tidak tercatat lengkap. Sistem tidak menebak SR dari berat panen.
-            </p>
-          ) : null}
-        </section>
-      ) : null}
-
-      <section className="panel">
-        <div className="panelTitle">
-          <div>
-            <p className="eyebrow dark">Kondisi Siklus</p>
-            <h2>Ringkasan operasional & biologis</h2>
-          </div>
-          <span className="badge good">{detail.populationSource}</span>
-        </div>
-
-        <div className="detailGrid">
-          <div><span>Ikan tebar</span><strong>{number0.format(detail.stockedFish)} ekor</strong></div>
-          <div><span>{isCompleted ? "Sisa populasi" : "Estimasi hidup"}</span><strong>{number0.format(detail.estimatedPopulation)} ekor</strong></div>
-          <div><span>Mortalitas</span><strong>{number0.format(detail.mortalityFish)} ekor · {pct(detail.mortalityRatePct)}</strong></div>
-          <div><span>Pakan kumulatif</span><strong>{number1.format(detail.cumulativeFeedKg)} kg</strong></div>
-          <div><span>Target FCR</span><strong>{fcr(detail.targetFcr)}</strong></div>
-          <div><span>Target SR</span><strong>{pct(detail.targetSrPct)}</strong></div>
-          <div><span>Ukuran kolam</span><strong>{dimensionText}</strong></div>
-          <div><span>Jenis kolam</span><strong>{detail.pondType ?? "—"}</strong></div>
-        </div>
-      </section>
-
-      <section className="panel">
-        <div className="panelTitle">
-          <div>
-            <p className="eyebrow dark">Growth Trend</p>
-            <h2>Perkembangan bobot sampling</h2>
+            <p>{detail.pondName ?? "Kolam budidaya"} · Hari ke-{detail.day} · {detail.cycleCode}</p>
           </div>
           {!isCompleted ? (
-            <Link className="textLink" href={`/sampling?cycleId=${detail.cycleId}`}>Tambah sampling →</Link>
+            <div className="quickActions detailActions">
+              <Link className="actionButton primary" href={`/input?cycleId=${detail.cycleId}`}><InputIcon size={15} />Input Harian</Link>
+              <Link className="actionButton" href={`/sampling?cycleId=${detail.cycleId}`}><SamplingIcon size={15} />Sampling</Link>
+              <Link className="actionButton" href={`/harvest?cycleId=${detail.cycleId}`}><HarvestIcon size={15} />Panen</Link>
+              <button className="iconButton" type="button" aria-label="Menu lainnya"><MoreIcon size={17} /></button>
+            </div>
           ) : null}
         </div>
 
-        {detail.samplingTrend.length === 0 ? (
-          <div className="emptyInline">Belum ada data sampling.</div>
-        ) : (
-          <div className="growthList">
-            {detail.samplingTrend.map((point) => (
-              <div className="growthRow" key={point.id}>
-                <div className="growthMeta">
-                  <strong>{number0.format(point.averageWeightG)} g</strong>
-                  <span>{dateFormatter.format(point.sampledAt)} · {point.sampleCount} sampel</span>
-                </div>
-                <div className="growthTrack" aria-hidden="true">
-                  <div
-                    className="growthBar"
-                    style={{ width: `${Math.max(5, (point.averageWeightG / maxAverageWeight) * 100)}%` }}
-                  />
-                </div>
-                <div className="growthDelta">
-                  <span>{point.weightGainG === null ? "Baseline" : `+${number1.format(point.weightGainG)} g`}</span>
-                  <strong>{point.adgGPerDay === null ? "—" : `${number2.format(point.adgGPerDay)} g/hari`}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+        <section className="detailMetricStrip" aria-label={isCompleted ? "Hasil final siklus" : "KPI kolam"}>
+          {isCompleted ? (
+            <>
+              <div><span>Final SR</span><strong>{pct(detail.survivalRatePct)}</strong></div>
+              <div><span>Total Panen</span><strong>{number1.format(detail.harvestedBiomassKg)} kg</strong></div>
+              <div><span>Actual HPP</span><strong>{detail.actualHppPerKg === null ? "—" : currency.format(detail.actualHppPerKg)}</strong></div>
+              <div><span>Laba Bersih</span><strong>{detail.netProfit === null ? "—" : currency.format(detail.netProfit)}</strong></div>
+            </>
+          ) : (
+            <>
+              <div><span>Estimated SR</span><strong>{pct(detail.survivalRatePct)}</strong></div>
+              <div><span>ABW Terakhir</span><strong>{detail.latestAverageWeightG === null ? "—" : `${number0.format(detail.latestAverageWeightG)} g`}</strong></div>
+              <div><span>Estimasi Biomassa</span><strong>{detail.estimatedBiomassKg === null ? "—" : `${number1.format(detail.estimatedBiomassKg)} kg`}</strong></div>
+              <div><span>FCR</span><strong>{fcr(detail.fcr)}</strong></div>
+            </>
+          )}
+        </section>
 
-      <section className="twoColumn">
-        <article className="panel financeCard">
-          <div className="panelTitle">
-            <div>
-              <p className="eyebrow dark">Keuangan</p>
-              <h2>Biaya siklus</h2>
+        <section className="operationalGridCard">
+          <div className="operationalGroup">
+            <h3>Populasi</h3>
+            <dl>
+              <div><dt>Ikan Tebar</dt><dd>{number0.format(detail.stockedFish)} ekor</dd></div>
+              <div><dt>{isCompleted ? "Sisa Populasi" : "Estimasi Hidup"}</dt><dd>{number0.format(detail.estimatedPopulation)} ekor</dd></div>
+              <div><dt>Mortalitas</dt><dd>{number0.format(detail.mortalityFish)} ekor · {pct(detail.mortalityRatePct)}</dd></div>
+            </dl>
+          </div>
+          <div className="operationalGroup">
+            <h3>Performa</h3>
+            <dl>
+              <div><dt>Pakan Kumulatif</dt><dd>{number1.format(detail.cumulativeFeedKg)} kg</dd></div>
+              <div><dt>Target FCR</dt><dd>{fcr(detail.targetFcr)}</dd></div>
+              <div><dt>Target SR</dt><dd>{pct(detail.targetSrPct)}</dd></div>
+            </dl>
+          </div>
+          <div className="operationalGroup">
+            <h3>Kolam</h3>
+            <dl>
+              <div><dt>Ukuran Kolam</dt><dd>{dimensionText}</dd></div>
+              <div><dt>Jenis Kolam</dt><dd>{detail.pondType ?? "—"}</dd></div>
+              {!isCompleted ? <div><dt>Target Panen</dt><dd>{detail.targetHarvestDate === null ? "—" : dateFormatter.format(detail.targetHarvestDate)}</dd></div> : null}
+            </dl>
+          </div>
+        </section>
+
+        <section className="workspaceCard pondChartCard">
+          <div className="sectionHeaderInline">
+            <h2>Perkembangan Bobot Sampling</h2>
+            {!isCompleted ? <Link href={`/sampling?cycleId=${detail.cycleId}`}>Tambah sampling →</Link> : null}
+          </div>
+          <GrowthChart series={targetSeries ? [observedSeries, targetSeries] : [observedSeries]} height={285} showPointLabels />
+          <div className="sampleCountRow" aria-label="Jumlah sampel">
+            {detail.samplingTrend.map((point) => <span key={point.id}>{number0.format(point.sampleCount)} sampel</span>)}
+          </div>
+        </section>
+
+        <div className="pondBottomGrid">
+          <section className="workspaceCard miniWorkspaceCard">
+            <div className="sectionHeaderInline"><h2>Aktivitas Terbaru</h2><Link href="/input">Lihat semua →</Link></div>
+            <div className="activityList pondActivityList">
+              {detail.recentActivity.slice(0, 3).map((activity) => (
+                <article className="activityRow" key={activity.id}>
+                  <span className={`activityIcon ${activity.type.toLowerCase()}`}>
+                    {activity.type === "SAMPLING" ? <SamplingIcon size={15} /> : activity.type === "FEED" ? <HarvestIcon size={15} /> : <CostIcon size={15} />}
+                  </span>
+                  <div><strong>{activity.title}</strong><span>{activity.detail}</span></div>
+                  <time>{activityWhen(activity.occurredAt, now)}</time>
+                </article>
+              ))}
+              {detail.recentActivity.length === 0 ? <p className="mutedEmpty">Belum ada aktivitas terbaru.</p> : null}
             </div>
-          </div>
-          <div className="moneyHero">{currency.format(detail.totalCost)}</div>
-          <p className="metricDisclaimer">
-            {isCompleted
-              ? `Actual HPP: ${detail.actualHppPerKg === null ? "—" : currency.format(detail.actualHppPerKg)}`
-              : `Biaya per estimasi standing kg: ${detail.currentCostPerStandingKg === null ? "—" : currency.format(detail.currentCostPerStandingKg)}`}
-          </p>
-          <div className="expenseList">
-            {detail.expenseBreakdown.map((expense) => (
-              <div key={expense.category}>
-                <span>{expenseLabel(expense.category)}</span>
-                <strong>{currency.format(expense.amount)}</strong>
-              </div>
-            ))}
-          </div>
-        </article>
+          </section>
 
-        <article className="panel financeCard">
-          <div className="panelTitle">
-            <div>
-              <p className="eyebrow dark">{isCompleted ? "Realisasi Panen" : "Target Panen"}</p>
-              <h2>{isCompleted ? "Hasil penjualan" : "Progress siklus"}</h2>
+          <section className="workspaceCard miniWorkspaceCard">
+            <div className="sectionHeaderInline"><h2>{isCompleted ? "Biaya Final" : "Biaya Berjalan"}</h2><Link href="/input">Lihat detail →</Link></div>
+            <div className="compactExpenseList">
+              {expenseRows.map((expense) => (
+                <div key={expense.category}><span>{expenseLabel(expense.category)}</span><strong>{currency.format(expense.amount)}</strong></div>
+              ))}
+              {expenseRows.length === 0 ? <p className="mutedEmpty">Belum ada biaya tercatat.</p> : null}
+              <div className="expenseTotal"><span>Total</span><strong>{currency.format(detail.totalCost)}</strong></div>
             </div>
-          </div>
-          <div className="detailGrid compactGrid">
-            {isCompleted ? (
-              <>
-                <div><span>Total panen</span><strong>{number1.format(detail.harvestedBiomassKg)} kg</strong></div>
-                <div><span>Omzet</span><strong>{currency.format(detail.revenueAmount)}</strong></div>
-                <div><span>Margin</span><strong>{pct(detail.marginPct)}</strong></div>
-                <div><span>Status siklus</span><strong>{detail.cycleStatus}</strong></div>
-              </>
-            ) : (
-              <>
-                <div><span>Target biomassa</span><strong>{detail.targetHarvestWeightKg === null ? "—" : `${number1.format(detail.targetHarvestWeightKg)} kg`}</strong></div>
-                <div><span>Target tanggal</span><strong>{detail.targetHarvestDate === null ? "—" : dateFormatter.format(detail.targetHarvestDate)}</strong></div>
-                <div><span>Sisa hari</span><strong>{detail.daysToTargetHarvest === null ? "—" : detail.daysToTargetHarvest < 0 ? `Lewat ${Math.abs(detail.daysToTargetHarvest)} hari` : `${detail.daysToTargetHarvest} hari`}</strong></div>
-                <div><span>Status siklus</span><strong>{detail.cycleStatus}</strong></div>
-              </>
-            )}
-          </div>
-        </article>
-      </section>
+          </section>
 
-      <section className="panel">
-        <div className="panelTitle">
-          <div>
-            <p className="eyebrow dark">Decision Signals</p>
-            <h2>Alert aktif</h2>
-          </div>
-          <span>{detail.alerts.length} alert</span>
+          <section className="workspaceCard miniWorkspaceCard" id="attention">
+            <h2>Alert & Catatan</h2>
+            <div className="alertNoteList">
+              {detail.alerts.slice(0, 1).map((alert) => (
+                <article className="compactAlert" key={alert.id}>
+                  <span className="alertDot">!</span>
+                  <div><strong>{alert.title}</strong><p>{alert.message}</p><small>{shortDateFormatter.format(alert.triggeredAt)}</small></div>
+                </article>
+              ))}
+              {detail.alerts.length === 0 ? (
+                <article className="compactAlert clearAlert"><span className="alertDot">✓</span><div><strong>Tidak ada alert aktif</strong><p>Kondisi siklus saat ini tidak memiliki warning terbuka.</p></div></article>
+              ) : null}
+              {detail.latestNote ? (
+                <article className="compactNote">
+                  <span>✎</span>
+                  <div><strong>Catatan</strong><p>{detail.latestNote.text}</p><small>{shortDateFormatter.format(detail.latestNote.occurredAt)}</small></div>
+                </article>
+              ) : null}
+            </div>
+          </section>
         </div>
 
-        {detail.alerts.length === 0 ? (
-          <div className="emptyInline">Tidak ada alert aktif untuk siklus ini.</div>
-        ) : (
-          <div className="alertList">
-            {detail.alerts.map((alert) => (
-              <article className={`alertCard ${alert.severity === "ACTION_REQUIRED" ? "alertDanger" : ""}`} key={alert.id}>
-                <strong>{alert.title}</strong>
-                <p>{alert.message}</p>
-                {alert.recommendedAction ? <span>Rekomendasi: {alert.recommendedAction}</span> : null}
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <footer>V0.6 · Harvest & Sales menutup siklus dan menghasilkan KPI aktual.</footer>
-    </main>
+        {isCompleted ? (
+          <section className="workspaceCard completedSummary">
+            <div className="sectionHeaderInline"><h2>Hasil Aktual Siklus</h2><span className="statusBadge good">ACTUAL</span></div>
+            <div className="completedGrid">
+              <div><span>Omzet</span><strong>{currency.format(detail.revenueAmount)}</strong></div>
+              <div><span>Total biaya</span><strong>{currency.format(detail.totalCost)}</strong></div>
+              <div><span>Net profit</span><strong>{detail.netProfit === null ? "—" : currency.format(detail.netProfit)}</strong></div>
+              <div><span>Margin</span><strong>{pct(detail.marginPct)}</strong></div>
+              <div><span>Final FCR</span><strong>{fcr(detail.fcr)}</strong></div>
+              <div><span>Selesai</span><strong>{detail.completedAt === null ? "—" : dateFormatter.format(detail.completedAt)}</strong></div>
+            </div>
+          </section>
+        ) : null}
+      </div>
+    </AppFrame>
   );
 }
