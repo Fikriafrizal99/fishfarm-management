@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { getSalesFormOptions, getSalesLeads } from "@/src/application/sales/get-sales-lists";
+import { SalesWorkspaceNav } from "@/app/_components/workspace-nav";
 import { submitLead } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,10 @@ export default async function LeadsPage({
 }) {
   const params = await searchParams;
   let leads: Awaited<ReturnType<typeof getSalesLeads>> = [];
-  let options: Awaited<ReturnType<typeof getSalesFormOptions>> = { customers: [], species: [] };
+  let options: Awaited<ReturnType<typeof getSalesFormOptions>> = {
+    customers: [],
+    species: [],
+  };
   let databaseError = false;
 
   try {
@@ -36,66 +39,124 @@ export default async function LeadsPage({
     databaseError = true;
   }
 
+  const dueFollowUps = leads.filter((lead) => lead.nextFollowUpAt !== null).length;
+
   return (
-    <div className="opsPage salesSubPage">
-      <div className="pageTitleRow salesSubTitle">
+    <div className="opsPage crmWorkspacePage">
+      <div className="workspaceHeadingRow">
         <div>
-          <Link className="detailBackLink" href="/sales">← Sales Dashboard</Link>
+          <p className="workspaceKicker">SALES CRM / ACQUISITION</p>
           <h1>Leads</h1>
-          <p>Calon pembeli, potensi kebutuhan, dan jadwal follow-up.</p>
+          <p>Catat calon pembeli, kebutuhan, harga indikatif, dan jadwal follow-up.</p>
         </div>
-        <span className="statusBadge good">LEADS</span>
+        <div className="workspaceHeadingStats">
+          <span><b>{leads.length}</b> total lead</span>
+          <span><b>{dueFollowUps}</b> punya follow-up</span>
+        </div>
       </div>
 
-      <nav className="salesWorkspaceNav" aria-label="Sales CRM navigation">
-        <Link href="/sales">Overview</Link>
-        <Link className="active" href="/sales/leads">Leads</Link>
-        <Link href="/sales/customers">Customers</Link>
-        <Link href="/sales/orders">Orders</Link>
-        <Link href="/sales/fulfillment">Fulfillment</Link>
-      </nav>
+      <SalesWorkspaceNav active="leads" />
 
       {params.saved === "1" ? <div className="notice successNotice">Lead berhasil disimpan.</div> : null}
       {params.error ? <div className="notice errorNotice">{params.error}</div> : null}
       {databaseError ? <div className="notice errorNotice">Database belum tersambung.</div> : null}
 
-      <section className="salesSubGrid">
-        <form action={submitLead} className="workspaceCard inputForm operationalFormCard">
-          <div className="sectionHeaderInline"><div><p className="eyebrow dark">New Lead</p><h2>Catat calon pembeli</h2></div></div>
-          <label><span>Judul lead</span><input name="title" required placeholder="Hotel ABC — kebutuhan Nila mingguan" /></label>
-          <div className="formGrid">
-            <label><span>Species / produk minat</span><select name="speciesId" defaultValue=""><option value="">Belum ditentukan</option>{options.species.map((species) => <option value={species.id} key={species.id}>{species.commonName}</option>)}</select></label>
-            <label><span>Sumber lead</span><input name="source" placeholder="Referral / WhatsApp / pasar" /></label>
+      <div className="workspaceSplit crmSplit">
+        <form action={submitLead} className="workspaceCard operationalWorkspaceForm">
+          <div className="workspaceCardHeader">
+            <div>
+              <span>NEW LEAD</span>
+              <h2>Catat calon pembeli</h2>
+            </div>
+            <small>Data komersial awal</small>
           </div>
-          <div className="formGrid">
-            <label><span>Nama kontak</span><input name="contactName" placeholder="Purchasing / pemilik" /></label>
-            <label><span>WhatsApp</span><input name="whatsapp" inputMode="tel" placeholder="08..." /></label>
+
+          <div className="formSectionBlock">
+            <h3>Identitas lead</h3>
+            <label>
+              <span>Judul lead</span>
+              <input name="title" required placeholder="Hotel ABC — kebutuhan Nila mingguan" />
+            </label>
+            <div className="compactFieldGrid two">
+              <label>
+                <span>Produk minat</span>
+                <select name="speciesId" defaultValue="">
+                  <option value="">Belum ditentukan</option>
+                  {options.species.map((species) => (
+                    <option value={species.id} key={species.id}>{species.commonName}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Sumber lead</span>
+                <input name="source" placeholder="Referral / WhatsApp / pasar" />
+              </label>
+            </div>
           </div>
-          <div className="formGrid">
-            <label><span>Potensi kebutuhan</span><div className="inputWithUnit"><input name="expectedDemandKg" type="number" min="0.001" step="0.001" placeholder="150" /><b>kg</b></div></label>
-            <label><span>Potensi harga/kg</span><div className="inputWithUnit moneyInput"><b>Rp</b><input name="expectedPricePerKg" type="number" min="1" step="1" placeholder="24000" /></div></label>
+
+          <div className="formSectionBlock">
+            <h3>Kontak & potensi</h3>
+            <div className="compactFieldGrid two">
+              <label><span>Nama kontak</span><input name="contactName" placeholder="Purchasing / pemilik" /></label>
+              <label><span>WhatsApp</span><input name="whatsapp" inputMode="tel" placeholder="08..." /></label>
+              <label>
+                <span>Kebutuhan</span>
+                <div className="compactUnitInput"><input name="expectedDemandKg" type="number" min="0.001" step="0.001" placeholder="150" /><b>kg</b></div>
+              </label>
+              <label>
+                <span>Harga indikatif</span>
+                <div className="compactUnitInput money"><b>Rp</b><input name="expectedPricePerKg" type="number" min="1" step="1" placeholder="24000" /></div>
+              </label>
+            </div>
           </div>
-          <label><span>Next follow-up</span><input name="nextFollowUpDate" type="date" /></label>
-          <label><span>Catatan</span><textarea name="notes" rows={3} placeholder="Kebutuhan ukuran, frekuensi order, preferensi pengiriman, dll." /></label>
-          <button className="primaryButton" type="submit" disabled={databaseError}>Simpan Lead</button>
+
+          <div className="formSectionBlock">
+            <h3>Follow-up</h3>
+            <label><span>Next follow-up</span><input name="nextFollowUpDate" type="date" /></label>
+            <label><span>Catatan</span><textarea name="notes" rows={3} placeholder="Ukuran, frekuensi order, preferensi pengiriman, dll." /></label>
+          </div>
+
+          <div className="workspaceFormActions">
+            <span>Lead tidak terikat ke kolam atau siklus.</span>
+            <button className="workspacePrimaryButton" type="submit" disabled={databaseError}>Simpan Lead</button>
+          </div>
         </form>
 
-        <section className="workspaceCard salesListCard">
-          <div className="sectionHeaderInline"><div><p className="eyebrow dark">Pipeline</p><h2>Lead tersimpan</h2></div><span className="mutedInline">{leads.length} lead</span></div>
-          <div className="crmList">
-            {leads.length === 0 ? <div className="emptyInline">Belum ada lead.</div> : leads.map((lead) => (
-              <div className="crmRow" key={lead.id}>
+        <section className="workspaceCard recordWorkspaceCard">
+          <div className="workspaceCardHeader">
+            <div>
+              <span>PIPELINE</span>
+              <h2>Lead tersimpan</h2>
+            </div>
+            <small>{leads.length} record</small>
+          </div>
+
+          <div className="recordTable leadRecordTable">
+            <div className="recordTableHead">
+              <span>Lead</span><span>Potensi</span><span>Follow-up</span><span>Status</span>
+            </div>
+            {leads.length === 0 ? (
+              <div className="recordEmpty">Belum ada lead.</div>
+            ) : leads.map((lead) => (
+              <article className="recordTableRow" key={lead.id}>
                 <div>
                   <strong>{lead.title}</strong>
-                  <span>{lead.species?.commonName ?? "Produk belum ditentukan"}{lead.expectedDemandKg === null ? "" : ` · ${number1.format(Number(lead.expectedDemandKg))} kg`}{lead.expectedPricePerKg === null ? "" : ` · ${currency.format(Number(lead.expectedPricePerKg))}/kg`}</span>
-                  {lead.whatsapp ? <span>WA {lead.whatsapp}</span> : null}
+                  <small>{lead.species?.commonName ?? "Produk belum ditentukan"}{lead.whatsapp ? ` · WA ${lead.whatsapp}` : ""}</small>
                 </div>
-                <div className="crmRowRight"><span className={`badge ${lead.status === "LOST" ? "danger" : lead.status === "CONVERTED" ? "good" : "warning"}`}>{lead.status}</span><small>{lead.nextFollowUpAt ? dateFormatter.format(lead.nextFollowUpAt) : "Belum ada follow-up"}</small></div>
-              </div>
+                <div>
+                  <strong>{lead.expectedDemandKg === null ? "—" : `${number1.format(Number(lead.expectedDemandKg))} kg`}</strong>
+                  <small>{lead.expectedPricePerKg === null ? "Harga belum ada" : `${currency.format(Number(lead.expectedPricePerKg))}/kg`}</small>
+                </div>
+                <div>
+                  <strong>{lead.nextFollowUpAt ? dateFormatter.format(lead.nextFollowUpAt) : "Belum dijadwalkan"}</strong>
+                  <small>{lead.source ?? "Sumber tidak dicatat"}</small>
+                </div>
+                <div><span className={`statusBadge ${lead.status === "LOST" ? "danger" : lead.status === "CONVERTED" ? "good" : "warning"}`}>{lead.status}</span></div>
+              </article>
             ))}
           </div>
         </section>
-      </section>
+      </div>
     </div>
   );
 }
