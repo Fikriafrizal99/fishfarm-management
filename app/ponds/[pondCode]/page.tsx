@@ -152,22 +152,31 @@ export default async function PondDetailPage({
     !isCompleted &&
     detail.targetAverageWeightG !== null &&
     detail.targetHarvestDate !== null &&
-    detail.samplingTrend.length > 0
-      ? {
-          label: "Target ABW estimasi",
-          tone: "muted" as const,
-          dashed: true,
-          points: [
-            {
-              date: detail.samplingTrend[0].sampledAt,
-              value: detail.samplingTrend[0].averageWeightG,
-            },
-            {
-              date: detail.targetHarvestDate,
-              value: detail.targetAverageWeightG,
-            },
-          ],
-        }
+    detail.samplingTrend.length >= 2
+      ? (() => {
+          const firstPoint = detail.samplingTrend[0];
+          const startTime = firstPoint.sampledAt.getTime();
+          const endTime = detail.targetHarvestDate.getTime();
+          const span = endTime - startTime;
+          if (span <= 0) return null;
+          return {
+            label: "Target ABW estimasi",
+            tone: "muted" as const,
+            dashed: true,
+            points: detail.samplingTrend.map((point) => {
+              const progress = Math.min(
+                1,
+                Math.max(0, (point.sampledAt.getTime() - startTime) / span),
+              );
+              return {
+                date: point.sampledAt,
+                value:
+                  firstPoint.averageWeightG +
+                  (detail.targetAverageWeightG! - firstPoint.averageWeightG) * progress,
+              };
+            }),
+          };
+        })()
       : null;
 
   const expenseRows = detail.expenseBreakdown.slice(0, 4);
@@ -239,7 +248,6 @@ export default async function PondDetailPage({
             <dl>
               <div><dt>Ukuran Kolam</dt><dd>{dimensionText}</dd></div>
               <div><dt>Jenis Kolam</dt><dd>{detail.pondType ?? "—"}</dd></div>
-              {!isCompleted ? <div><dt>Target Panen</dt><dd>{detail.targetHarvestDate === null ? "—" : dateFormatter.format(detail.targetHarvestDate)}</dd></div> : null}
             </dl>
           </div>
         </section>
