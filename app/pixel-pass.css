@@ -1,0 +1,154 @@
+/* Pixel pass against the approved FishFarm redesign mockup.
+   Keep this file loaded after globals.css so these values remain the
+   final visual tuning layer without disturbing legacy/form styles. */
+
+@media (min-width: 981px) {
+  .dashboardPage {
+    padding-top: 26px;
+    padding-bottom: 40px;
+  }
+
+  .dashboardPage .pageTitleRow {
+    margin-bottom: 18px;
+  }
+
+  .dashboardPage .summaryStrip article {
+    min-height: 78px;
+  }
+
+  .dashboardPage .summaryStrip article strong {
+    font-size: 19px;
+  }
+
+  .dashboardPage .attentionStrip {
+    min-height: 80px;
+    margin-bottom: 18px;
+  }
+
+  .dashboardPage .workspaceSection {
+    margin-bottom: 16px;
+  }
+
+  .dashboardPage .dataTable th {
+    height: 32px;
+  }
+
+  .dashboardPage .dataTable td {
+    height: 45px;
+  }
+
+  .dashboardLowerGrid {
+    grid-template-columns: minmax(0, 1.78fr) 300px;
+  }
+
+  .dashboardPage .chartCard,
+  .dashboardPage .activityCard {
+    min-height: 300px;
+  }
+
+  .dashboardPage .activityRow {
+    min-height: 54px;
+  }
+
+  .pondDetailPage {
+    padding-top: 18px;
+    padding-bottom: 36px;
+  }
+
+  .pondDetailPage .detailBackLink {
+    margin-bottom: 14px;
+  }
+
+  .pondDetailPage .detailTitleRow {
+    margin-bottom: 14px;
+  }
+
+  .pondDetailPage .detailMetricStrip {
+    margin-bottom: 12px;
+  }
+
+  .pondDetailPage .detailMetricStrip > div {
+    min-height: 64px;
+    padding: 12px 16px;
+  }
+
+  .pondDetailPage .detailMetricStrip span {
+    font-size: 11px;
+  }
+
+  .pondDetailPage .detailMetricStrip strong {
+    font-size: 17px;
+  }
+
+  .pondDetailPage .operationalGridCard {
+    margin-bottom: 12px;
+    padding: 13px 18px;
+  }
+
+  .pondDetailPage .operationalGroup h3 {
+    margin-bottom: 10px;
+    font-size: 10px;
+  }
+
+  .pondDetailPage .operationalGroup dl {
+    gap: 8px;
+  }
+
+  .pondDetailPage .operationalGroup dt,
+  .pondDetailPage .operationalGroup dd {
+    font-size: 11px;
+  }
+
+  .pondDetailPage .pondChartCard {
+    margin-bottom: 12px;
+    padding: 14px 18px 9px;
+  }
+
+  .pondDetailPage .sectionHeaderInline h2 {
+    font-size: 14px;
+  }
+
+  .pondDetailPage .sectionHeaderInline > a {
+    font-size: 9px;
+  }
+
+  .pondDetailPage .chartLegend {
+    margin-top: 3px;
+    font-size: 9.5px;
+  }
+
+  .pondDetailPage .chartAxisText {
+    font-size: 10px;
+  }
+
+  .pondDetailPage .chartPointLabel {
+    font-size: 9px;
+  }
+
+  .pondDetailPage .sampleCountRow {
+    padding-top: 2px;
+    padding-bottom: 5px;
+    font-size: 8.5px;
+  }
+
+  .pondBottomGrid {
+    gap: 12px;
+  }
+
+  .miniWorkspaceCard {
+    min-height: 185px;
+  }
+
+  .miniWorkspaceCard .sectionHeaderInline h2,
+  .miniWorkspaceCard > h2 {
+    font-size: 13px;
+  }
+
+  .pondActivityList .activityRow {
+    min-height: 48px;
+  }
+
+  .compactExpenseList > div {
+    min-height: 29px;
+  }
+}
