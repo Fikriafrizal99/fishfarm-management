@@ -1,5 +1,6 @@
 import { FulfillmentStatus } from "@/src/generated/prisma/client";
 import { db } from "@/src/lib/db";
+import { syncOrderFulfillmentStatus } from "./sync-order-fulfillment-status";
 
 export interface AllocateOrderItemCommand {
   orderItemId: string;
@@ -48,17 +49,13 @@ export async function allocateOrderItem(command: AllocateOrderItemCommand) {
     const lotAvailableKg = Math.max(Number(lot.quantityKg) - lotAllocatedKg, 0);
 
     if (command.allocatedKg > itemRemainingKg) {
-      throw new Error(
-        `Alokasi melebihi sisa order ${itemRemainingKg.toFixed(3)} kg`,
-      );
+      throw new Error(`Alokasi melebihi sisa order ${itemRemainingKg.toFixed(3)} kg`);
     }
     if (command.allocatedKg > lotAvailableKg) {
-      throw new Error(
-        `Alokasi melebihi stok lot tersedia ${lotAvailableKg.toFixed(3)} kg`,
-      );
+      throw new Error(`Alokasi melebihi stok lot tersedia ${lotAvailableKg.toFixed(3)} kg`);
     }
 
-    return tx.fulfillmentAllocation.create({
+    const allocation = await tx.fulfillmentAllocation.create({
       data: {
         orderItemId: item.id,
         harvestLotId: lot.id,
@@ -67,5 +64,8 @@ export async function allocateOrderItem(command: AllocateOrderItemCommand) {
         notes: command.notes?.trim() || undefined,
       },
     });
+
+    await syncOrderFulfillmentStatus(tx, item.salesOrderId);
+    return allocation;
   });
 }
