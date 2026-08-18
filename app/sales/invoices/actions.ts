@@ -31,14 +31,13 @@ export async function submitInvoice(formData: FormData): Promise<void> {
 
     revalidatePath("/sales");
     revalidatePath("/sales/orders");
-    revalidatePath("/sales/invoices");
-    revalidatePath("/sales/payments");
+    revalidatePath("/sales/finance");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal membuat invoice";
-    redirect(`/sales/invoices?error=${encodeURIComponent(message)}`);
+    redirect(`/sales/finance?error=${encodeURIComponent(message)}#invoice`);
   }
 
-  redirect("/sales/invoices?saved=1");
+  redirect("/sales/finance?invoiceSaved=1#invoice");
 }
 
 export async function submitVoidInvoice(formData: FormData): Promise<void> {
@@ -47,11 +46,11 @@ export async function submitVoidInvoice(formData: FormData): Promise<void> {
     if (!invoiceId) throw new Error("Invoice tidak ditemukan");
     await voidInvoice(invoiceId);
     revalidatePath("/sales");
-    revalidatePath("/sales/invoices");
+    revalidatePath("/sales/finance");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal membatalkan invoice";
-    redirect(`/sales/invoices?error=${encodeURIComponent(message)}`);
+    redirect(`/sales/finance?error=${encodeURIComponent(message)}#invoice`);
   }
 
-  redirect("/sales/invoices");
+  redirect("/sales/finance#invoice");
 }
