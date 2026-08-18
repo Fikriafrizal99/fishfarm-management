@@ -3,16 +3,11 @@
 import { redirect } from "next/navigation";
 import { PondStatus } from "@/src/generated/prisma/client";
 import { createPond, updatePond } from "@/src/application/management/manage-production";
+import { deleteEmptyPond } from "@/src/application/management/manage-lifecycle";
 
-function text(formData: FormData, name: string): string {
-  return String(formData.get(name) ?? "").trim();
-}
-
+function text(formData: FormData, name: string): string { return String(formData.get(name) ?? "").trim(); }
 function optionalNumber(formData: FormData, name: string): number | undefined {
-  const raw = text(formData, name);
-  if (!raw) return undefined;
-  const value = Number(raw);
-  return Number.isFinite(value) ? value : undefined;
+  const raw = text(formData, name); if (!raw) return undefined; const value = Number(raw); return Number.isFinite(value) ? value : undefined;
 }
 
 export async function savePond(formData: FormData) {
@@ -45,4 +40,13 @@ export async function savePond(formData: FormData) {
     redirect(`/ponds?error=${encodeURIComponent(message)}${pondId ? `&edit=${encodeURIComponent(pondId)}` : ""}`);
   }
   redirect("/ponds?saved=1");
+}
+
+export async function deletePondAction(formData: FormData) {
+  try {
+    await deleteEmptyPond(text(formData, "pondId"));
+  } catch (error) {
+    redirect(`/ponds?error=${encodeURIComponent(error instanceof Error ? error.message : "Gagal menghapus kolam")}`);
+  }
+  redirect("/ponds?deleted=1");
 }
