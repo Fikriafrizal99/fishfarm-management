@@ -1,12 +1,14 @@
 # Product Roadmap — FishFarm Management
 
-Version: **0.10**
+Version: **0.11**
 
 ## Current State
 
-The V0.8 production/database foundation has passed local bootstrap, seed, Decision Engine, TypeScript, production build, DB health, and UI sanity checks.
+The V0.8 production/database foundation passed local bootstrap, seed, Decision Engine, TypeScript, production build, DB health, and UI sanity checks.
 
-V0.9 implements the first end-to-end Sales CRM transaction flow. V0.10 adds the missing personal-operations usability layer: Pond/Cycle management, safe raw-log corrections, lifecycle-aware History, and period-aware Reports. V0.9/V0.10 require fresh local runtime validation.
+V0.9 implements the first end-to-end Sales CRM transaction flow. V0.10 adds Pond/Cycle management, safe operational corrections, lifecycle-aware History, and period-aware Reports. V0.11 adds export/documents plus CRM workspace consolidation, customer purchase history, and receivable aging.
+
+V0.9–V0.11 changes still require a fresh local validation gate before being called runtime-stable.
 
 ## Phase 0 — Product & Architecture Foundation
 
@@ -81,7 +83,7 @@ Status: **IMPLEMENTED V1 / BASELINE VALIDATED**
 
 Status: **COMPLETE**
 
-- [x] Customer / Lead / Opportunity / Interaction
+- [x] Customer / Lead / Opportunity / Interaction schema
 - [x] SalesOrder / SalesOrderItem
 - [x] HarvestLot / FulfillmentAllocation
 - [x] Delivery / Invoice / Payment schema
@@ -110,77 +112,147 @@ Status: **IMPLEMENTED / LOCAL VALIDATION PENDING**
 ### Master data
 
 - [x] Budidaya tab `Kolam`
-- [x] create Pond
-- [x] edit Pond dimensions/type/status/notes
+- [x] create/edit Pond
 - [x] safe delete only for truly empty Pond
 - [x] historical Pond retained instead of destructive delete
 - [x] Budidaya tab `Siklus`
-- [x] create ACTIVE ProductionCycle
-- [x] atomic Stocking + optional SEED Expense creation
-- [x] edit targets and initial stocking while operational
+- [x] atomic ProductionCycle + Stocking + optional SEED Expense creation
+- [x] edit cycle targets and initial stocking while operational
 - [x] completed/cancelled Cycle read-only
 - [x] safe cycle cancellation before Harvest
-- [x] cycle with Harvest must close through Final Harvest
 
 ### Operational history & correction
 
-- [x] Sampling history + ACTIVE/HARVESTING correction
-- [x] Feed history + correction
-- [x] linked feed Expense recalculation after feed correction
+- [x] Sampling history + correction
+- [x] Feed history + linked feed-cost correction
 - [x] Mortality history + population-safe correction
 - [x] Manual Expense ledger + correction
 - [x] completed/cancelled operational logs locked
-- [x] Harvest history
-- [x] Harvest correction intentionally locked because of HarvestLot/commercial references
+- [x] Harvest history locked because of HarvestLot/commercial references
 
 ## Phase 7 — History & Reporting — V0.10 / Phase B
 
 Status: **IMPLEMENTED / LOCAL VALIDATION PENDING**
 
-### History
-
-- [x] redundant `Lainnya > Overview` removed (`/more` redirects to `/history`)
 - [x] Utility navigation reduced to `Riwayat | Laporan`
 - [x] active and completed production cycles separated
-- [x] active cycles show SR/FCR/ABW/biomass/running cost instead of fake final loss
+- [x] active cycles show operational state instead of fake final loss
 - [x] completed cycles show Actual HPP/revenue/profit/margin
 - [x] commercial Order → Delivered → Invoice → Paid → Outstanding reconciliation
-- [x] date range filter
+- [x] History date filter
+- [x] Reports date filter
+- [x] executive KPI hierarchy
+- [x] production revenue vs cost trend
+- [x] harvest kg visualization
+- [x] active-cycle comparison
+- [x] Order vs Collection trend
+- [x] pipeline / receivable snapshot
+- [x] customer contribution
 
-### Reports
+## Phase 8 — Export / Documents — V0.11
 
-- [x] period filter
-- [x] executive KPI hierarchy instead of equal-weight card wall
-- [x] monthly production revenue vs cost trend
-- [x] monthly harvest kg visualization
-- [x] current active-cycle SR/FCR/ABW/biomass/cost comparison
-- [x] period Order vs Collection trend
-- [x] current pipeline / receivable snapshot
-- [x] customer contribution table
-- [x] reporting remains read-only over PostgreSQL source of truth
+Status: **IMPLEMENTED / LOCAL VALIDATION PENDING**
 
-## Phase 8 — Export / Documents
+### CSV
 
-Status: **NEXT**
+- [x] unified History CSV with date-range support
+- [x] Reports CSV with date-range support
+- [x] Sampling raw CSV
+- [x] Expense ledger CSV
+- [x] Sales Orders CSV
+- [x] Payments CSV
+- [x] UTF-8 BOM and CSV escaping
 
-- [ ] CSV raw/history export
-- [ ] CSV report export
-- [ ] PDF Farm Report
-- [ ] PDF Cycle Report
-- [ ] PDF Invoice
+### PDF
 
-## Phase 9 — CRM Usability & Control
+- [x] reusable server-side PDF document generator
+- [x] Farm Report PDF
+- [x] Production Cycle PDF
+- [x] Invoice PDF
+- [x] active cycle PDF keeps estimated/running values separate from actual-final
+- [x] completed cycle PDF uses final harvested biomass for Final FCR
+- [x] Invoice PDF labels Sales Order items as references when invoice subtotal is partial
+
+### UI
+
+- [x] one compact `Export` menu instead of duplicated download buttons
+- [x] Reports CSV/PDF actions
+- [x] History CSV action
+- [x] Sampling / Expense / Orders / Payments CSV actions
+- [x] Cycle PDF row action
+- [x] Invoice PDF row action
+
+## Phase 9 — CRM Usability & Control — V0.11 / CRM Polish
+
+Status: **PARTIALLY COMPLETE / LOCAL VALIDATION PENDING**
+
+### Completed in V0.11
+
+- [x] Sales navigation shortened to `Overview | Leads | Customers | Pipeline | Orders | Fulfillment | Finance`
+- [x] Fulfillment workspace combines Allocation + Delivery UI
+- [x] Delivery remains a separate database transaction/domain model
+- [x] Finance workspace combines Invoice + Payment UI
+- [x] Invoice and Payment remain separate ledgers/domain models
+- [x] receivable aging: current / 1–30 / 31–60 / >60 days
+- [x] aging based on Asia/Jakarta calendar day
+- [x] customer purchase history detail
+- [x] customer ordered kg/value and ASP/kg
+- [x] customer delivered / invoiced / collected / outstanding summary
+- [x] backward-compatible Delivery/Invoice/Payment routes redirect to canonical workspaces
+
+### Remaining CRM usability
 
 - [ ] CustomerInteraction write timeline
 - [ ] follow-up update/reminder workflow
 - [ ] multi-item Sales Order UI
 - [ ] order cancellation workflow
-- [ ] receivable aging / overdue flags
-- [ ] customer purchase history detail
-- [ ] customer price history
+- [ ] customer margin contribution
 - [ ] repeat-order metrics
 - [ ] delivery proof / attachments
 - [ ] quotation workflow
+- [ ] returns / claims
+
+## V0.11 Validation Gate
+
+Because V0.11 adds `pdf-lib` but does not change Prisma schema:
+
+```powershell
+git pull
+npm install
+npm run typecheck
+npm run build
+npm run dev
+```
+
+Do **not** reset or reseed the database merely for V0.11.
+
+Runtime sanity paths:
+
+```text
+/reports
+/history
+/sampling
+/expenses
+/cycles
+/sales/orders
+/sales/customers
+/sales/fulfillment
+/sales/finance
+```
+
+Download sanity checks:
+
+```text
+History CSV
+Report CSV
+Report PDF
+Sampling CSV
+Expense CSV
+Order CSV
+Payment CSV
+Cycle PDF
+Invoice PDF
+```
 
 ## V1.0 Release Definition
 
@@ -195,11 +267,11 @@ Harvest → HarvestLot
     ↓
 Lead / Opportunity / Sales Order
     ↓
-Fulfillment → Delivery
+Fulfillment (Allocation + Delivery)
     ↓
-Invoice → Payment
+Finance (Invoice + Payment)
     ↓
-History + Performance Report
+History + Performance Report + Export
 ```
 
 Core operation must not require spreadsheets.
