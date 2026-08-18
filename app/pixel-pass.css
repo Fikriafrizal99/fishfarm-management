@@ -152,3 +152,265 @@
     min-height: 29px;
   }
 }
+
+/* Navigation completion */
+.notificationIcon,
+.sidebarFarmStateLink {
+  color: inherit;
+  text-decoration: none;
+}
+.sidebarFarmStateLink { display: block; }
+
+/* Shared operational forms */
+.formWorkspacePage {
+  width: min(100% - 48px, 820px);
+}
+.formPageTitle {
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+.formPageTitle .detailBackLink {
+  display: block;
+  margin-bottom: 10px;
+}
+.operationalFormCard {
+  padding: 20px;
+}
+.formFooterHint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.formFooterHint a,
+.inlineInfoLink {
+  color: var(--teal-dark);
+  font-weight: 650;
+  text-decoration: none;
+}
+.fieldTag {
+  display: inline-flex;
+  margin-left: 5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #f2f5f5;
+  color: #7f8d91;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Budidaya / More module workspaces */
+.moduleMenuCard {
+  margin-bottom: 14px;
+}
+.mutedInline {
+  color: var(--muted);
+  font-size: 10px;
+}
+.moduleLinkGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.moduleLinkGrid > a {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--teal-dark);
+  text-decoration: none;
+}
+.moduleLinkGrid > a:hover {
+  border-color: #b9d2d2;
+  background: #fbfdfd;
+}
+.moduleLinkGrid > a strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ink);
+  font-size: 11px;
+}
+.moduleLinkGrid > a span {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+.moduleLinkGrid > a > b {
+  color: #839398;
+  font-size: 14px;
+}
+.oneColumnModules { grid-template-columns: 1fr; }
+.pondWorkspaceList {
+  display: grid;
+  margin-top: 10px;
+}
+.pondWorkspaceRow {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(430px, 1.4fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 66px;
+  padding: 10px 2px;
+  border-top: 1px solid #edf0f0;
+  text-decoration: none;
+}
+.pondWorkspaceRow:first-child { border-top: 0; }
+.pondWorkspaceRow > div:first-child strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: 12px;
+}
+.pondWorkspaceRow > div:first-child span {
+  color: var(--muted);
+  font-size: 9.5px;
+}
+.pondWorkspaceMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(80px, 1fr)) auto;
+  align-items: center;
+  gap: 12px;
+}
+.pondWorkspaceMetrics > span {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 8.5px;
+}
+.pondWorkspaceMetrics b {
+  color: #324c53;
+  font-size: 10px;
+}
+.pondWorkspaceMetrics i { font-style: normal; }
+
+/* Alert center */
+.alertSummaryStrip {
+  grid-template-columns: repeat(2, minmax(0, 260px));
+  justify-content: start;
+}
+.alertCenterList { display: grid; margin-top: 8px; }
+.alertCenterRow {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 160px;
+  gap: 10px;
+  align-items: start;
+  padding: 13px 0;
+  border-top: 1px solid #edf0f0;
+  color: inherit;
+  text-decoration: none;
+}
+.alertCenterRow:first-child { border-top: 0; }
+.alertCenterMark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+}
+.alertCenterMark.warning { background: var(--orange-soft); color: var(--orange); }
+.alertCenterMark.danger { background: var(--red-soft); color: var(--red); }
+.alertCenterMark.good { background: var(--green-soft); color: var(--green); }
+.alertCenterTitle { display: flex; align-items: center; gap: 8px; }
+.alertCenterTitle strong { font-size: 11px; }
+.alertCenterRow p { margin: 4px 0; color: var(--muted); font-size: 9.5px; line-height: 1.45; }
+.alertCenterRow small { color: #5b747a; font-size: 9px; }
+.alertCenterMeta { display: grid; justify-items: end; gap: 3px; text-align: right; }
+.alertCenterMeta strong { color: var(--teal-dark); font-size: 10px; }
+.alertCenterMeta span,
+.alertCenterMeta time { color: var(--muted); font-size: 8.5px; }
+.compactHistory .alertCenterRow { grid-template-columns: 28px minmax(0, 1fr) 150px; }
+
+/* Sales workspace */
+.salesOpsPage { padding-top: 26px; }
+.salesWorkspaceNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 14px;
+}
+.salesWorkspaceNav a,
+.salesWorkspaceNav span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: #fff;
+  color: #405b62;
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.salesWorkspaceNav .navComingSoon {
+  border-style: dashed;
+  background: #f7f9f9;
+  color: #9aa5a8;
+  cursor: not-allowed;
+}
+.salesKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.salesKpiGrid article {
+  min-height: 72px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.salesKpiGrid span { display: block; color: var(--muted); font-size: 9px; }
+.salesKpiGrid strong { display: block; margin-top: 5px; color: var(--ink); font-size: 16px; }
+.salesDashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.salesDashboardGrid .workspaceCard { min-height: 210px; }
+.crmBoundaryCard {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: var(--teal-dark);
+}
+.crmBoundaryCard strong { color: var(--ink); font-size: 10px; }
+.crmBoundaryCard p { margin: 4px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.appMain > .salesShell {
+  margin-top: 0;
+  padding-top: 26px;
+}
+
+@media (max-width: 980px) {
+  .moduleLinkGrid,
+  .salesDashboardGrid { grid-template-columns: 1fr; }
+  .salesKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pondWorkspaceRow { grid-template-columns: 1fr; }
+  .pondWorkspaceMetrics { grid-template-columns: repeat(3, 1fr) auto; }
+}
+
+@media (max-width: 640px) {
+  .formWorkspacePage { width: min(100% - 28px, 820px); }
+  .formFooterHint { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .moduleLinkGrid { grid-template-columns: 1fr; }
+  .pondWorkspaceMetrics { grid-template-columns: 1fr 1fr; }
+  .alertCenterRow,
+  .compactHistory .alertCenterRow { grid-template-columns: 24px minmax(0, 1fr); }
+  .alertCenterMeta { grid-column: 2; justify-items: start; text-align: left; }
+  .salesKpiGrid { grid-template-columns: 1fr 1fr; }
+}
