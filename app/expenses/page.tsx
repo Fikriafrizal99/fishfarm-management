@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getActiveCycleOptions } from "@/src/application/cycles/get-active-cycle-options";
 import { getAppShellContext } from "@/src/application/navigation/get-app-shell-context";
 import { AppFrame } from "@/app/_components/app-frame";
@@ -119,18 +118,6 @@ export default async function ExpensesPage({
                 <div><span>Biaya/kg biomassa</span><strong>Recalculated</strong></div>
                 <div><span>HPP final</span><strong>Memakai all-in cost</strong></div>
                 <div><span>Profit final</span><strong>Revenue − cost</strong></div>
-              </div>
-            </section>
-
-            <section className="workspaceCard operationContextCard">
-              <div className="workspaceCardHeader"><div><span>QUICK ACCESS</span><h2>Kolam aktif</h2></div></div>
-              <div className="cycleQuickList">
-                {cycles.map((cycle) => (
-                  <Link href={`/ponds/${encodeURIComponent(cycle.pondCode)}`} key={cycle.id}>
-                    <div><strong>{cycle.pondCode}</strong><small>{cycle.species}</small></div><b>›</b>
-                  </Link>
-                ))}
-                {cycles.length === 0 ? <div className="recordEmpty">Tidak ada siklus aktif.</div> : null}
               </div>
             </section>
           </aside>
