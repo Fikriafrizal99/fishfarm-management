@@ -290,6 +290,10 @@ textarea { font-weight: 400; }
   .paymentRecordTable .recordTableRow { min-width: 680px; }
 }
 
+@media (max-width: 820px) {
+  .sidebarNav { grid-template-columns: repeat(4, 1fr); }
+}
+
 @media (max-width: 760px) {
   :root { --type-page: 24px; }
   .workspaceHeadingRow { align-items: flex-start; flex-direction: column; gap: 10px; }
