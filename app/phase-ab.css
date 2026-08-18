@@ -14,7 +14,12 @@
 .managementListCard table.recordTable strong { display: block; color: var(--ink); font-size: 9.5px; }
 .managementListCard table.recordTable small { display: block; margin-top: 2px; color: var(--muted); font-size: 7.5px; }
 .tableAction { color: var(--teal-dark); font-size: 8.5px; font-weight: 700; text-decoration: none; }
+.rowActions { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.rowActions form { margin: 0; }
+.tableDangerAction { padding: 0; border: 0; background: transparent; color: #b75a4f; font: inherit; font-size: 8.5px; font-weight: 700; cursor: pointer; }
+.tableDangerAction:hover { text-decoration: underline; }
 .workspaceCardHeader > a { color: var(--teal-dark); font-size: 8.5px; font-weight: 700; text-decoration: none; }
+.detailManageLink { align-self: center; padding: 7px 10px; border: 1px solid #cfdddd; border-radius: 6px; color: var(--teal-dark); font-size: 8.5px; font-weight: 700; text-decoration: none; }
 .historyLedgerCard { margin-top: 12px; padding: 0; }
 .historyLedgerCard .sectionHeaderInline { padding: 12px 14px; border-bottom: 1px solid var(--line); }
 .historyTwoColumn { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 12px; }
