@@ -1,0 +1,53 @@
+.salesWorkspaceNav a.active {
+  border-color: #8bbfc0;
+  background: #eef8f7;
+  color: var(--teal-dark);
+}
+
+.salesSubPage {
+  padding-top: 22px;
+}
+
+.salesSubTitle {
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.salesSubTitle .detailBackLink {
+  display: block;
+  margin-bottom: 9px;
+}
+
+.salesSubGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.salesListCard {
+  min-height: 420px;
+}
+
+.salesSubPage .operationalFormCard,
+.salesSubPage .salesListCard {
+  margin-top: 0;
+}
+
+.salesSubPage .sectionHeaderInline > div > .eyebrow {
+  margin-bottom: 4px;
+}
+
+.salesSubPage .sectionHeaderInline > div > h2 {
+  margin: 0;
+}
+
+@media (max-width: 980px) {
+  .salesSubGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .salesListCard {
+    min-height: auto;
+  }
+}
