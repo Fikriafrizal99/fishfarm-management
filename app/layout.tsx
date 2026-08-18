@@ -5,6 +5,7 @@ import "./pixel-pass.css";
 import "./module-pass.css";
 import "./workspace-v2.css";
 import "./final-polish.css";
+import "./phase-ab.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,11 +19,7 @@ export const metadata: Metadata = {
   applicationName: "FishFarm Management",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id" className={inter.variable}>
       <body>{children}</body>
