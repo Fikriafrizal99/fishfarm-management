@@ -177,12 +177,6 @@ export default async function Home() {
             <h1>Dashboard Farm</h1>
             <p>Ringkasan operasional hari ini</p>
           </div>
-          <div className="quickActions" aria-label="Aksi cepat">
-            <Link className="actionButton primaryOutline" href="/input"><InputIcon size={15} />Input Harian</Link>
-            <Link className="actionButton" href="/sampling"><SamplingIcon size={15} />Sampling</Link>
-            <Link className="actionButton" href="/harvest"><HarvestIcon size={15} />Panen</Link>
-            <Link className="actionButton" href="/expenses"><CostIcon size={15} />Biaya</Link>
-          </div>
         </div>
 
         <section className="summaryStrip" aria-label="Ringkasan farm">
@@ -288,7 +282,6 @@ export default async function Home() {
               ))}
               {dashboard.recentActivity.length === 0 ? <p className="mutedEmpty">Belum ada aktivitas terbaru.</p> : null}
             </div>
-            <Link className="cardFooterLink" href="/input">Lihat semua aktivitas →</Link>
           </section>
         </div>
       </div>
