@@ -25,14 +25,14 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const totalInvoiced = invoiceWorkspace.invoices.filter((invoice) => invoice.status !== "VOID").reduce((sum, invoice) => sum + Number(invoice.totalAmount), 0);
   const totalCollected = paymentWorkspace.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const outstanding = paymentWorkspace.invoices.reduce((sum, invoice) => sum + invoice.outstandingAmount, 0);
-  const now = new Date();
+  const todayStart = new Date(`${todayInJakarta()}T00:00:00+07:00`);
   const aging = { current: 0, d1to30: 0, d31to60: 0, over60: 0 };
   for (const invoice of paymentWorkspace.invoices) {
-    if (!invoice.dueDate || invoice.dueDate.getTime() >= now.getTime()) {
+    if (!invoice.dueDate || invoice.dueDate.getTime() >= todayStart.getTime()) {
       aging.current += invoice.outstandingAmount;
       continue;
     }
-    const days = Math.max(1, Math.floor((now.getTime() - invoice.dueDate.getTime()) / 86_400_000));
+    const days = Math.max(1, Math.floor((todayStart.getTime() - invoice.dueDate.getTime()) / 86_400_000));
     if (days <= 30) aging.d1to30 += invoice.outstandingAmount;
     else if (days <= 60) aging.d31to60 += invoice.outstandingAmount;
     else aging.over60 += invoice.outstandingAmount;
