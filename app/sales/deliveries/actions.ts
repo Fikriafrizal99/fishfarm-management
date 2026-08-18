@@ -21,7 +21,11 @@ export async function submitDelivery(formData: FormData): Promise<void> {
     const plannedDate = String(formData.get("plannedDate") ?? "").trim();
     const statusRaw = String(formData.get("status") ?? DeliveryStatus.PLANNED).trim();
     if (!orderItemId) throw new Error("Order item wajib dipilih");
-    if (![DeliveryStatus.PLANNED, DeliveryStatus.DISPATCHED, DeliveryStatus.DELIVERED].includes(statusRaw as DeliveryStatus)) {
+    if (
+      statusRaw !== DeliveryStatus.PLANNED &&
+      statusRaw !== DeliveryStatus.DISPATCHED &&
+      statusRaw !== DeliveryStatus.DELIVERED
+    ) {
       throw new Error("Status delivery tidak valid");
     }
 
@@ -29,7 +33,7 @@ export async function submitDelivery(formData: FormData): Promise<void> {
       orderItemId,
       quantityKg: requiredPositiveNumber(formData, "quantityKg", "Jumlah pengiriman"),
       plannedAt: plannedDate ? new Date(`${plannedDate}T09:00:00+07:00`) : undefined,
-      status: statusRaw as DeliveryStatus,
+      status: statusRaw,
       recipientName: String(formData.get("recipientName") ?? ""),
       notes: String(formData.get("notes") ?? ""),
     });
