@@ -4,6 +4,7 @@ import { getAppShellContext } from "@/src/application/navigation/get-app-shell-c
 import { getOperationalLogHistory } from "@/src/application/operations/manage-operational-logs";
 import { AppFrame } from "@/app/_components/app-frame";
 import { BudidayaWorkspaceNav } from "@/app/_components/workspace-nav";
+import { ExportMenu } from "@/app/_components/export-menu";
 import { correctExpense } from "@/app/_actions/operational-corrections";
 import { submitExpense } from "./actions";
 
@@ -26,7 +27,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
   return (
     <AppFrame active="budidaya" ownerName={shell?.ownerName ?? null} alertCount={shell?.openAlertCount ?? 0} activePonds={shell?.activePonds}>
       <div className="opsPage operationWorkspacePage">
-        <div className="workspaceHeadingRow"><div><p className="workspaceKicker">BUDIDAYA / COST LEDGER</p><h1>Biaya</h1><p>Catat dan koreksi biaya manual yang membentuk running cost dan HPP siklus.</p></div><div className="workspaceHeadingStats"><span><b>{cycles.length}</b> siklus aktif</span></div></div>
+        <div className="workspaceHeadingRow"><div><p className="workspaceKicker">BUDIDAYA / COST LEDGER</p><h1>Biaya</h1><p>Catat dan koreksi biaya manual yang membentuk running cost dan HPP siklus.</p></div><div className="workspaceHeadingActions"><ExportMenu items={[{ label: "Expense Ledger CSV", href: "/api/export/data/expenses" }]} /></div></div>
         <BudidayaWorkspaceNav active="expenses" />
         {params.saved === "1" ? <div className="notice successNotice">Biaya berhasil disimpan.</div> : null}
         {params.updated === "1" ? <div className="notice successNotice">Biaya berhasil dikoreksi.</div> : null}
