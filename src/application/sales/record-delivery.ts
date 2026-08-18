@@ -41,13 +41,13 @@ export async function recordDelivery(command: RecordDeliveryCommand) {
     const allocatedKg = item.allocations
       .filter((row) => row.status !== "CANCELLED")
       .reduce((sum, row) => sum + Number(row.allocatedKg), 0);
-    const deliveredKg = item.deliveryItems
+    const bookedDeliveryKg = item.deliveryItems
       .filter((row) => row.delivery.status !== DeliveryStatus.CANCELLED)
       .reduce((sum, row) => sum + Number(row.quantityKg), 0);
-    const deliverableKg = Math.max(allocatedKg - deliveredKg, 0);
+    const deliverableKg = Math.max(allocatedKg - bookedDeliveryKg, 0);
 
     if (command.quantityKg > deliverableKg + 1e-9) {
-      throw new Error(`Pengiriman melebihi quantity teralokasi yang belum dikirim (${deliverableKg.toFixed(3)} kg)`);
+      throw new Error(`Pengiriman melebihi quantity teralokasi yang belum dijadwalkan (${deliverableKg.toFixed(3)} kg)`);
     }
 
     const now = new Date();
@@ -95,6 +95,12 @@ export async function setDeliveryStatus(deliveryId: string, status: DeliveryStat
     if (!delivery) throw new Error("Delivery tidak ditemukan");
     if (delivery.status === DeliveryStatus.CANCELLED && status !== DeliveryStatus.CANCELLED) {
       throw new Error("Delivery yang sudah dibatalkan tidak dapat diaktifkan kembali");
+    }
+    if (delivery.status === DeliveryStatus.DELIVERED && status !== DeliveryStatus.DELIVERED) {
+      throw new Error("Delivery yang sudah DELIVERED tidak dapat diubah kembali");
+    }
+    if (delivery.status === DeliveryStatus.DISPATCHED && status === DeliveryStatus.PLANNED) {
+      throw new Error("Delivery DISPATCHED tidak dapat dikembalikan ke PLANNED");
     }
 
     const now = new Date();
