@@ -124,6 +124,46 @@ export default async function Home() {
       })),
     }));
 
+  const targetCycle = dashboard.cycles.find(
+    (cycle) => cycle.targetAverageWeightG !== null && cycle.targetHarvestDate !== null,
+  );
+  const targetGrowth = targetCycle
+    ? dashboard.growthSeries.find((series) => series.cycleId === targetCycle.cycleId)
+    : null;
+  const targetChartSeries =
+    targetCycle?.targetAverageWeightG !== null &&
+    targetCycle?.targetHarvestDate &&
+    targetGrowth &&
+    targetGrowth.points.length >= 2
+      ? (() => {
+          const firstPoint = targetGrowth.points[0];
+          const startTime = firstPoint.sampledAt.getTime();
+          const endTime = targetCycle.targetHarvestDate.getTime();
+          const span = endTime - startTime;
+          if (span <= 0) return null;
+          return {
+            label: "Target (ABW)",
+            tone: "muted" as const,
+            dashed: true,
+            points: targetGrowth.points.map((point) => {
+              const progress = Math.min(
+                1,
+                Math.max(0, (point.sampledAt.getTime() - startTime) / span),
+              );
+              return {
+                date: point.sampledAt,
+                value:
+                  firstPoint.averageWeightG +
+                  (targetCycle.targetAverageWeightG! - firstPoint.averageWeightG) * progress,
+              };
+            }),
+          };
+        })()
+      : null;
+  const combinedChartSeries = targetChartSeries
+    ? [...chartSeries, targetChartSeries]
+    : chartSeries;
+
   return (
     <AppFrame
       active="dashboard"
@@ -222,7 +262,7 @@ export default async function Home() {
         <div className="dashboardLowerGrid">
           <section className="workspaceCard chartCard">
             <h2>Trend Pertumbuhan (ABW)</h2>
-            <GrowthChart series={chartSeries} height={265} />
+            <GrowthChart series={combinedChartSeries} height={265} />
           </section>
 
           <section className="workspaceCard activityCard">
