@@ -32,7 +32,6 @@ export default async function SalesOrdersPage({
   const selectedOpportunity = openOpportunities.find((item) => item.id === params.opportunityId) ?? null;
   const selectedCustomerId = selectedOpportunity?.customerId ?? (options.customers.some((item) => item.id === params.customerId) ? params.customerId : "");
   const selectedSpeciesId = selectedOpportunity?.speciesId ?? (options.species.some((item) => item.id === params.speciesId) ? params.speciesId : "");
-  const openOrders = orders.filter((order) => !["FULFILLED", "CANCELLED"].includes(order.status)).length;
 
   return (
     <div className="opsPage crmWorkspacePage">
@@ -48,7 +47,7 @@ export default async function SalesOrdersPage({
 
       <div className="workspaceSplit crmSplit">
         <form action={submitSalesOrder} className="workspaceCard operationalWorkspaceForm">
-          <div className="workspaceCardHeader"><div><span>NEW ORDER</span><h2>Catat order</h2></div><small>1 produk / order V0.8</small></div>
+          <div className="workspaceCardHeader"><div><span>NEW ORDER</span><h2>Catat order</h2></div><small>1 produk per order</small></div>
           <div className="formSectionBlock"><h3>Opportunity / account</h3><label><span>Opportunity (opsional)</span><select name="opportunityId" defaultValue={selectedOpportunity?.id ?? ""}><option value="">Order langsung tanpa opportunity</option>{openOpportunities.map((item) => <option value={item.id} key={item.id}>{item.title} · {item.customer.name}</option>)}</select></label><div className="compactFieldGrid two"><label><span>Customer</span><select name="customerId" required defaultValue={selectedCustomerId}><option value="">Pilih customer</option>{options.customers.map((customer) => <option value={customer.id} key={customer.id}>{customer.name} · {customer.customerType}</option>)}</select></label><label><span>Species / produk</span><select name="speciesId" required defaultValue={selectedSpeciesId}><option value="">Pilih species</option>{options.species.map((species) => <option value={species.id} key={species.id}>{species.commonName}</option>)}</select></label></div></div>
           <div className="formSectionBlock"><h3>Nilai order</h3><div className="compactFieldGrid two"><label><span>Jumlah order</span><div className="compactUnitInput"><input name="quantityKg" type="number" min="0.001" step="0.001" required defaultValue={selectedOpportunity?.expectedQtyKg ? Number(selectedOpportunity.expectedQtyKg) : undefined} placeholder="100" /><b>kg</b></div></label><label><span>Harga per kg</span><div className="compactUnitInput money"><b>Rp</b><input name="unitPricePerKg" type="number" min="1" step="1" required defaultValue={selectedOpportunity?.expectedPricePerKg ? Number(selectedOpportunity.expectedPricePerKg) : undefined} placeholder="23500" /></div></label></div></div>
           <div className="formSectionBlock"><h3>Pengiriman & pembayaran</h3><label><span>Target pengiriman</span><input name="requestedDeliveryDate" type="date" /></label><label><span>Term pembayaran</span><input name="paymentTerms" placeholder="COD / DP 30% / tempo 7 hari" /></label><label><span>Catatan</span><textarea name="notes" rows={3} placeholder="Ukuran ikan, packing, alamat pengiriman, dll." /></label></div>
