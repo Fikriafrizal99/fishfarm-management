@@ -1,45 +1,167 @@
-/* Final readability polish for Operational Workspace V2. */
+/* Final system pass — loaded LAST.
+   One typography, one density scale, one interaction language across Dashboard,
+   Budidaya, CRM, History/Reports, and detail pages. */
 
-.workspaceKicker { font-size: 9px !important; letter-spacing: .08em; }
-.workspaceHeadingRow > div:first-child > p:last-child { font-size: 12px; }
+:root {
+  --type-page: 27px;
+  --type-section: 15px;
+  --type-card: 14px;
+  --type-body: 12px;
+  --type-label: 10.5px;
+  --type-meta: 9.5px;
+  --type-micro: 9px;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea,
+table,
+summary {
+  font-family: var(--font-sans) !important;
+}
+body { font-size: 14px; }
+button,
+input,
+select,
+textarea { font-weight: 400; }
+
+/* App chrome */
+.appBrand strong { font-size: 14px; font-weight: 700; }
+.topbarMeta { font-size: 12px; }
+.sidebarItem { font-size: 12px; font-weight: 500; }
+.sidebarItem.active { font-weight: 650; }
+
+/* Page hierarchy */
+.pageTitleRow h1,
+.detailTitleRow h1,
+.workspaceHeadingRow h1 {
+  font-size: var(--type-page);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -.025em;
+}
+.pageTitleRow p,
+.detailTitleRow p,
+.workspaceHeadingRow > div:first-child > p:last-child {
+  font-size: var(--type-body);
+  line-height: 1.5;
+}
+.workspaceKicker,
+.eyebrow {
+  font-size: var(--type-meta) !important;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: .075em;
+}
 .workspaceHeadingStats span { padding: 0 12px; font-size: 10px; }
-.workspaceHeadingStats b { font-size: 13px; }
-.workspaceTabBar { gap: 24px; min-height: 42px; margin-bottom: 12px; }
-.workspaceTab { min-height: 42px; font-size: 11px; }
+.workspaceHeadingStats b { font-size: 13px; font-weight: 700; }
+
+/* Workspace navigation */
+.workspaceTabBar { gap: 24px; min-height: 42px; margin-bottom: 13px; }
+.workspaceTab { min-height: 42px; font-size: 11.5px; font-weight: 500; }
+.workspaceTab.active { font-weight: 700; }
 .crmWorkspacePage .workspaceTabBar { gap: 18px; }
+.crmSubflowTabs { font-size: 10px; }
 
-.workspaceFutureTabs,
-.workspaceRoadmapHint { display: none !important; }
+/* Card headings and shared section labels */
+.workspaceSection > h2,
+.workspaceCard > h2,
+.miniWorkspaceCard > h2,
+.sectionHeaderInline h2,
+.workspaceCardHeader h2 { font-size: var(--type-card); font-weight: 700; }
+.workspaceCardHeader > div > span { font-size: var(--type-micro); }
+.workspaceCardHeader > small,
+.workspaceCardHeader > a,
+.mutedInline { font-size: var(--type-meta); }
+.formSectionBlock h3 { font-size: var(--type-meta); }
 
-.workspaceCardHeader > div > span { font-size: 8px; }
-.workspaceCardHeader h2 { font-size: 14px; }
-.workspaceCardHeader > small { font-size: 9px; }
-.formSectionBlock h3 { font-size: 9px; }
-.operationalWorkspaceForm label > span { font-size: 10px; }
+/* Forms */
+.operationalWorkspaceForm label > span,
+.correctionCard label { font-size: var(--type-label); }
 .operationalWorkspaceForm input,
 .operationalWorkspaceForm select,
-.operationalWorkspaceForm textarea { font-size: 11px; }
+.operationalWorkspaceForm textarea,
+.correctionCard input,
+.reportFilterBar input {
+  font-size: 11.5px;
+}
 .operationalWorkspaceForm input,
-.operationalWorkspaceForm select { height: 36px; }
-.compactUnitInput b { font-size: 9px; }
+.operationalWorkspaceForm select,
+.correctionCard input { height: 37px; }
+.operationalWorkspaceForm textarea { line-height: 1.5; }
+.compactUnitInput b { font-size: 9.5px; }
 .workspaceFormActions > span,
 .workspaceInlineNotice,
-.contextActionLink.inline { font-size: 9.5px; }
-.workspacePrimaryButton { min-width: 138px; min-height: 36px; font-size: 10px; }
+.contextActionLink.inline { font-size: 10px; }
+.workspacePrimaryButton {
+  min-width: 138px;
+  min-height: 37px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.fieldTag { font-size: 8.5px; }
 
-.cycleQuickList strong,
-.contextMetricList strong { font-size: 10.5px; }
-.cycleQuickList small,
-.workflowSteps span { font-size: 9px; }
-.contextMetricList span { font-size: 9.5px; }
-.workflowSteps strong { font-size: 10px; }
+/* Buttons / links */
+.actionButton,
+.iconButton { font-size: 11px; }
+.tableAction,
+.tableDangerAction,
+.tableActionLink,
+.tableActionButton,
+.detailManageLink { font-size: 9.5px; font-weight: 650; }
+.tableActionLink,
+.tableActionButton { min-height: 27px; padding: 0 8px; }
+.exportMenu > summary,
+.exportMenuPopover a { font-size: 9.5px; }
 
-.recordTableHead { min-height: 34px; font-size: 8.5px; }
-.recordTableRow { min-height: 61px; }
-.recordTableRow strong { font-size: 10px; }
-.recordTableRow small { font-size: 8.5px; }
-.recordEmpty { font-size: 10px; }
+/* Status system */
+.statusBadge {
+  min-height: 24px;
+  padding: 0 9px;
+  font-size: 9.5px;
+  font-weight: 700;
+}
 
+/* Dashboard / summary */
+.summaryStrip article span:not(.summaryIcon),
+.salesKpiGrid span { font-size: 10px; }
+.summaryStrip article strong { font-size: 19px; }
+.summaryStrip article small { font-size: 9.5px; }
+.salesKpiGrid strong { font-size: 16px; }
+.attentionLead strong { font-size: 12px; }
+.attentionLead small,
+.attentionMetrics span { font-size: 9.5px; }
+.attentionLead a { font-size: 14px; }
+.activityRow strong { font-size: 10.5px; }
+.activityRow span,
+.cardFooterLink { font-size: 9.5px; }
+.activityRow time { font-size: 9px; }
+
+/* Standard tables */
+.dataTable th {
+  height: 34px;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+.dataTable td { font-size: 11px; }
+.dataTable td small { font-size: 9px; color: var(--muted); }
+.managementListCard table.recordTable { font-size: 10.5px; }
+.managementListCard table.recordTable th { font-size: 9px; }
+.managementListCard table.recordTable td { font-size: 10.5px; }
+.managementListCard table.recordTable strong { font-size: 10.5px; }
+.managementListCard table.recordTable small { font-size: 9px; }
+
+/* CRM record tables */
+.recordTableHead { min-height: 34px; font-size: 9px; }
+.recordTableRow { min-height: 62px; }
+.recordTableRow strong { font-size: 10.5px; }
+.recordTableRow small { font-size: 9px; line-height: 1.4; }
+.recordEmpty,
+.emptyInline,
+.mutedEmpty { font-size: 10.5px; }
 .opportunityRecordTable .recordTableHead,
 .opportunityRecordTable .recordTableRow {
   grid-template-columns: minmax(190px, 1.4fr) minmax(115px, .8fr) minmax(115px, .8fr) minmax(150px, 1fr);
@@ -56,37 +178,94 @@
 .paymentRecordTable .recordTableRow {
   grid-template-columns: minmax(110px, .75fr) minmax(180px, 1.25fr) minmax(145px, 1fr) minmax(90px, .65fr);
 }
-.recordActionCell {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.recordActionCell { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 6px; }
 .recordActionCell form { display: inline-flex; margin: 0; }
-.tableActionLink,
-.tableActionButton {
-  display: inline-flex;
-  align-items: center;
-  min-height: 25px;
-  padding: 0 7px;
-  border: 1px solid #dce4e4;
-  border-radius: 5px;
-  background: #fff;
-  color: var(--teal-dark);
-  font: inherit;
-  font-size: 8.5px;
-  font-weight: 650;
-  line-height: 1;
-  text-decoration: none;
-  cursor: pointer;
-}
-.tableActionLink:hover,
-.tableActionButton:hover { border-color: #b8cece; background: #f9fcfc; }
 .dangerText { color: #b24c45 !important; }
 
+/* Context rails */
+.cycleQuickList strong,
+.contextMetricList strong { font-size: 10.5px; }
+.cycleQuickList small,
+.workflowSteps span { font-size: 9.5px; }
+.contextMetricList span { font-size: 10px; }
+.workflowSteps strong { font-size: 10.5px; }
+.metricDisclaimer { font-size: 10px; line-height: 1.5; }
+
+/* History */
+.historySectionHeading h2,
+.reportSectionHeading h2,
+.crmFlowSectionHeader h2 { font-size: var(--type-section); }
+.historySectionHeading span,
+.reportSectionHeading > span,
+.crmFlowSectionHeader > span { font-size: 9.5px; }
+.activeCycleCard header strong { font-size: 11.5px; }
+.activeCycleCard header span:not(.statusBadge) { font-size: 9px; }
+.activeCycleMetrics span,
+.completedCycleRow > div > span,
+.commercialHistoryRow > div > span { font-size: 9px; }
+.activeCycleMetrics strong { font-size: 12px; }
+.activeCycleCard footer { font-size: 9.5px; }
+.completedIdentity strong,
+.commercialHistoryRow > div:first-child strong { font-size: 10.5px; }
+.completedIdentity span,
+.completedIdentity small,
+.commercialHistoryRow > div:first-child span,
+.commercialHistoryRow > div:first-child small { font-size: 9px; }
+.completedCycleRow > div > strong,
+.commercialHistoryRow > div > strong { font-size: 10px; }
+
+/* Reports */
+.reportFilterBar label { font-size: 9.5px; }
+.reportFilterBar button,
+.reportFilterBar a { font-size: 9.5px; }
+.reportExecutiveStrip span,
+.reportSummaryLine span { font-size: 9px; }
+.reportExecutiveStrip strong { font-size: 17px; }
+.reportExecutiveStrip small { font-size: 8.5px; }
+.reportSummaryLine strong { font-size: 10.5px; }
+.reportTrendCard h3 { font-size: 11.5px; }
+.trendBarRow > strong { font-size: 9px; }
+.trendBars span { font-size: 8.5px; }
+.trendBars b { font-size: 8.5px; }
+.harvestColumnChart strong { font-size: 8.5px; }
+.harvestColumnChart span { font-size: 8px; }
+
+/* CRM summaries */
+.financeSummaryStrip span,
+.customerSummaryStrip span,
+.agingGrid span { font-size: 9px; }
+.financeSummaryStrip strong,
+.customerSummaryStrip strong,
+.agingGrid strong { font-size: 13px; }
+.customerDetailHeader h2 { font-size: 14px; }
+.customerDetailHeader p { font-size: 9.5px; }
+.customerHistoryGrid h3 { font-size: 11px; }
+.customerTimeline strong,
+.customerTimeline b { font-size: 10px; }
+.customerTimeline small { font-size: 9px; }
+
+/* Alert center */
+.alertCenterTitle strong { font-size: 11px; }
+.alertCenterRow p { font-size: 10px; }
+.alertCenterRow small { font-size: 9.5px; }
+.alertCenterMeta strong { font-size: 10.5px; }
+.alertCenterMeta span,
+.alertCenterMeta time { font-size: 9px; }
+
+/* Detail page */
+.pondDetailPage .detailMetricStrip span { font-size: 10.5px; }
+.pondDetailPage .detailMetricStrip strong { font-size: 18px; }
+.pondDetailPage .operationalGroup h3 { font-size: 10px; }
+.pondDetailPage .operationalGroup dt,
+.pondDetailPage .operationalGroup dd { font-size: 11px; }
+.pondDetailPage .chartLegend { font-size: 9.5px; }
+.pondDetailPage .chartAxisText { font-size: 10px; }
+.pondDetailPage .chartPointLabel { font-size: 9.5px; }
+.pondDetailPage .sampleCountRow { font-size: 9px; }
+
+/* Width harmonization */
 @media (min-width: 1280px) {
-  .operationWorkspacePage { width: min(100% - 56px, 1080px); }
+  .operationWorkspacePage { width: min(100% - 56px, 1120px); }
   .crmWorkspacePage { width: min(100% - 56px, 1180px); }
 }
 
@@ -103,6 +282,11 @@
 }
 
 @media (max-width: 760px) {
+  :root { --type-page: 24px; }
   .workspaceHeadingRow { align-items: flex-start; flex-direction: column; gap: 10px; }
   .workspaceHeadingStats span:first-child { padding-left: 0; }
+  .workspaceHeadingActions { width: 100%; justify-content: flex-end; }
+  .financeSummaryStrip,
+  .customerSummaryStrip,
+  .agingGrid { grid-template-columns: 1fr 1fr; }
 }
