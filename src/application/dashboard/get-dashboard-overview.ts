@@ -1,4 +1,9 @@
-import { AlertSeverity, AlertStatus, CycleStatus } from "@/src/generated/prisma/client";
+import {
+  AlertSeverity,
+  AlertStatus,
+  CycleStatus,
+  ExpenseSourceType,
+} from "@/src/generated/prisma/client";
 import { db } from "@/src/lib/db";
 import {
   calculateAverageWeightG,
@@ -32,6 +37,28 @@ export interface DashboardCycleRow {
   openAlertCount: number;
 }
 
+export interface DashboardGrowthSeries {
+  cycleId: string;
+  pondCode: string;
+  species: string;
+  points: Array<{
+    sampledAt: Date;
+    averageWeightG: number;
+  }>;
+}
+
+export interface DashboardRecentActivity {
+  id: string;
+  type: "SAMPLING" | "FEED" | "EXPENSE";
+  pondCode: string;
+  occurredAt: Date;
+  sampleCount?: number;
+  averageWeightG?: number;
+  quantityKg?: number;
+  amount?: number;
+  description?: string;
+}
+
 export interface DashboardOverview {
   farmId: string;
   farmName: string;
@@ -44,11 +71,30 @@ export interface DashboardOverview {
   mortalityRatePct: number | null;
   fcr: number | null;
   cycles: DashboardCycleRow[];
+  growthSeries: DashboardGrowthSeries[];
+  recentActivity: DashboardRecentActivity[];
 }
 
 function toNumber(value: unknown): number {
   if (value === null || value === undefined) return 0;
   return Number(value);
+}
+
+function resolveSampleAverage(sample: {
+  averageWeightG: unknown;
+  totalSampleWeightKg: unknown;
+  sampleCount: number;
+}): number | null {
+  if (sample.averageWeightG !== null && sample.averageWeightG !== undefined) {
+    return toNumber(sample.averageWeightG);
+  }
+  if (sample.totalSampleWeightKg && sample.sampleCount > 0) {
+    return calculateAverageWeightG(
+      toNumber(sample.totalSampleWeightKg),
+      sample.sampleCount,
+    );
+  }
+  return null;
 }
 
 function dayOfCycle(startedAt: Date | null, now: Date): number {
@@ -139,16 +185,7 @@ export async function getDashboardOverview(
     const mortalityRatePct = calculateMortalityRatePct(mortality, stockedFish);
 
     const latestSample = cycle.samplingLogs[0];
-    let averageWeightG: number | null = null;
-    if (latestSample?.averageWeightG !== null && latestSample?.averageWeightG !== undefined) {
-      averageWeightG = toNumber(latestSample.averageWeightG);
-    } else if (latestSample?.totalSampleWeightKg && latestSample.sampleCount > 0) {
-      averageWeightG = calculateAverageWeightG(
-        toNumber(latestSample.totalSampleWeightKg),
-        latestSample.sampleCount,
-      );
-    }
-
+    const averageWeightG = latestSample ? resolveSampleAverage(latestSample) : null;
     const estimatedBiomassKg =
       averageWeightG === null
         ? null
@@ -192,8 +229,7 @@ export async function getDashboardOverview(
         : null;
 
     const targetFcr = cycle.targetFcr === null ? null : toNumber(cycle.targetFcr);
-    const targetSrPct =
-      cycle.targetSrPct === null ? null : toNumber(cycle.targetSrPct);
+    const targetSrPct = cycle.targetSrPct === null ? null : toNumber(cycle.targetSrPct);
     const hasActionAlert = cycle.alerts.some(
       (alert) => alert.severity === AlertSeverity.ACTION_REQUIRED,
     );
@@ -228,6 +264,51 @@ export async function getDashboardOverview(
       openAlertCount: cycle.alerts.length,
     };
   });
+
+  const growthSeries: DashboardGrowthSeries[] = cycles.map((cycle) => ({
+    cycleId: cycle.id,
+    pondCode: cycle.pond.code,
+    species: cycle.species.commonName,
+    points: cycle.samplingLogs
+      .slice()
+      .reverse()
+      .map((sample) => ({
+        sampledAt: sample.sampledAt,
+        averageWeightG: resolveSampleAverage(sample),
+      }))
+      .filter((point): point is { sampledAt: Date; averageWeightG: number } => point.averageWeightG !== null),
+  }));
+
+  const recentActivity: DashboardRecentActivity[] = cycles
+    .flatMap((cycle) => [
+      ...cycle.samplingLogs.map((sample) => ({
+        id: `sampling-${sample.id}`,
+        type: "SAMPLING" as const,
+        pondCode: cycle.pond.code,
+        occurredAt: sample.sampledAt,
+        sampleCount: sample.sampleCount,
+        averageWeightG: resolveSampleAverage(sample) ?? undefined,
+      })),
+      ...cycle.feedingLogs.map((feeding) => ({
+        id: `feeding-${feeding.id}`,
+        type: "FEED" as const,
+        pondCode: cycle.pond.code,
+        occurredAt: feeding.eventAt,
+        quantityKg: toNumber(feeding.quantityKg),
+      })),
+      ...cycle.expenses
+        .filter((expense) => expense.sourceType === ExpenseSourceType.MANUAL)
+        .map((expense) => ({
+          id: `expense-${expense.id}`,
+          type: "EXPENSE" as const,
+          pondCode: cycle.pond.code,
+          occurredAt: expense.expenseDate,
+          amount: toNumber(expense.amount),
+          description: expense.description,
+        })),
+    ])
+    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+    .slice(0, 5);
 
   const totalStocked = rows.reduce((sum, row) => sum + row.stockedFish, 0);
   const activeFish = rows.reduce((sum, row) => sum + row.estimatedPopulation, 0);
@@ -282,5 +363,7 @@ export async function getDashboardOverview(
       totalStocked > 0 ? (totalMortality / totalStocked) * 100 : null,
     fcr: farmBiomassGain > 0 ? totalFeed / farmBiomassGain : null,
     cycles: rows,
+    growthSeries,
+    recentActivity,
   };
 }
