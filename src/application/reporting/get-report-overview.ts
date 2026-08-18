@@ -1,4 +1,4 @@
-import { DeliveryStatus, InvoiceStatus, OpportunityStatus, SalesOrderStatus } from "@/src/generated/prisma/client";
+import { CycleStatus, DeliveryStatus, InvoiceStatus, OpportunityStatus, SalesOrderStatus } from "@/src/generated/prisma/client";
 import { db } from "@/src/lib/db";
 import { getDashboardOverview } from "@/src/application/dashboard/get-dashboard-overview";
 import type { ReportingRange } from "./get-history-overview";
@@ -13,14 +13,14 @@ export async function getReportOverview(range: ReportingRange = {}) {
 
   const [dashboard, completedCycles, expenses, harvests, opportunities, orders, deliveries, invoices, payments, receivableInvoices, customerCount] = await Promise.all([
     getDashboardOverview(),
-    db.productionCycle.findMany({ where: { farmId: farm.id, status: "COMPLETED", ...(dateFilter ? { completedAt: dateFilter } : {}) }, select: { id: true } }),
+    db.productionCycle.findMany({ where: { farmId: farm.id, status: CycleStatus.COMPLETED, ...(dateFilter ? { completedAt: dateFilter } : {}) }, select: { id: true } }),
     db.expense.findMany({ where: { farmId: farm.id, ...(dateFilter ? { expenseDate: dateFilter } : {}) }, select: { expenseDate: true, amount: true } }),
     db.harvest.findMany({ where: { cycle: { farmId: farm.id }, ...(dateFilter ? { harvestedAt: dateFilter } : {}) }, select: { harvestedAt: true, weightKg: true, revenueAmount: true } }),
     db.salesOpportunity.findMany({ where: { farmId: farm.id, status: OpportunityStatus.OPEN } }),
     db.salesOrder.findMany({ where: { farmId: farm.id, status: { not: SalesOrderStatus.CANCELLED }, ...(dateFilter ? { orderDate: dateFilter } : {}) }, include: { customer: true, items: true } }),
     db.delivery.findMany({ where: { farmId: farm.id, status: DeliveryStatus.DELIVERED, ...(dateFilter ? { deliveredAt: dateFilter } : {}) }, include: { items: true } }),
     db.invoice.findMany({ where: { farmId: farm.id, status: { not: InvoiceStatus.VOID }, ...(dateFilter ? { issueDate: dateFilter } : {}) } }),
-    db.payment.findMany({ where: { invoice: { farmId: farm.id }, ...(dateFilter ? { paidAt: dateFilter } : {}) }, include: { invoice: { include: { salesOrder: { include: { customer: true } } } } } }),
+    db.payment.findMany({ where: { invoice: { is: { farmId: farm.id } }, ...(dateFilter ? { paidAt: dateFilter } : {}) }, include: { invoice: { include: { salesOrder: { include: { customer: true } } } } } }),
     db.invoice.findMany({ where: { farmId: farm.id, status: { in: [InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID] } }, include: { payments: true } }),
     db.customer.count({ where: { farmId: farm.id, active: true } }),
   ]);
