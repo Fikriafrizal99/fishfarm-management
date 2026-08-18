@@ -5,8 +5,6 @@ import { GrowthChart } from "@/app/_components/growth-chart";
 import {
   CostIcon,
   HarvestIcon,
-  InputIcon,
-  MoreIcon,
   SamplingIcon,
 } from "@/app/_components/icons";
 
@@ -184,7 +182,7 @@ export default async function PondDetailPage({
   return (
     <AppFrame active="budidaya" ownerName={null} alertCount={detail.alerts.length} compact>
       <div className="opsPage pondDetailPage">
-        <Link className="detailBackLink" href="/">← Kembali ke Budidaya</Link>
+        <Link className="detailBackLink" href="/budidaya">← Kembali ke Budidaya</Link>
 
         {query.harvestSaved === "1" ? (
           <div className="notice successNotice">Panen berhasil disimpan. KPI finansial dan biologis sudah dihitung ulang.</div>
@@ -198,14 +196,6 @@ export default async function PondDetailPage({
             </div>
             <p>{detail.pondName ?? "Kolam budidaya"} · Hari ke-{detail.day} · {detail.cycleCode}</p>
           </div>
-          {!isCompleted ? (
-            <div className="quickActions detailActions">
-              <Link className="actionButton primary" href={`/input?cycleId=${detail.cycleId}`}><InputIcon size={15} />Input Harian</Link>
-              <Link className="actionButton" href={`/sampling?cycleId=${detail.cycleId}`}><SamplingIcon size={15} />Sampling</Link>
-              <Link className="actionButton" href={`/harvest?cycleId=${detail.cycleId}`}><HarvestIcon size={15} />Panen</Link>
-              <button className="iconButton" type="button" aria-label="Menu lainnya"><MoreIcon size={17} /></button>
-            </div>
-          ) : null}
         </div>
 
         <section className="detailMetricStrip" aria-label={isCompleted ? "Hasil final siklus" : "KPI kolam"}>
@@ -255,7 +245,6 @@ export default async function PondDetailPage({
         <section className="workspaceCard pondChartCard">
           <div className="sectionHeaderInline">
             <h2>Perkembangan Bobot Sampling</h2>
-            {!isCompleted ? <Link href={`/sampling?cycleId=${detail.cycleId}`}>Tambah sampling →</Link> : null}
           </div>
           <GrowthChart series={targetSeries ? [observedSeries, targetSeries] : [observedSeries]} height={285} showPointLabels />
           <div className="sampleCountRow" aria-label="Jumlah sampel">
@@ -265,7 +254,7 @@ export default async function PondDetailPage({
 
         <div className="pondBottomGrid">
           <section className="workspaceCard miniWorkspaceCard">
-            <div className="sectionHeaderInline"><h2>Aktivitas Terbaru</h2><Link href="/input">Lihat semua →</Link></div>
+            <div className="sectionHeaderInline"><h2>Aktivitas Terbaru</h2></div>
             <div className="activityList pondActivityList">
               {detail.recentActivity.slice(0, 3).map((activity) => (
                 <article className="activityRow" key={activity.id}>
@@ -281,7 +270,7 @@ export default async function PondDetailPage({
           </section>
 
           <section className="workspaceCard miniWorkspaceCard">
-            <div className="sectionHeaderInline"><h2>{isCompleted ? "Biaya Final" : "Biaya Berjalan"}</h2><Link href="/input">Lihat detail →</Link></div>
+            <div className="sectionHeaderInline"><h2>{isCompleted ? "Biaya Final" : "Biaya Berjalan"}</h2></div>
             <div className="compactExpenseList">
               {expenseRows.map((expense) => (
                 <div key={expense.category}><span>{expenseLabel(expense.category)}</span><strong>{currency.format(expense.amount)}</strong></div>
