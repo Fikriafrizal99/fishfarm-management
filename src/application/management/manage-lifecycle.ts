@@ -1,4 +1,4 @@
-import { CycleStatus } from "@/src/generated/prisma/client";
+import { AlertStatus, CycleStatus } from "@/src/generated/prisma/client";
 import { db } from "@/src/lib/db";
 
 export async function deleteEmptyPond(pondId: string) {
@@ -25,12 +25,16 @@ export async function cancelCycle(cycleId: string) {
   if (cycle.harvests.length > 0) {
     throw new Error("Siklus yang sudah memiliki panen tidak boleh dibatalkan. Tutup melalui Panen Final.");
   }
+  const now = new Date();
   await db.productionCycle.update({
     where: { id: cycle.id },
-    data: { status: CycleStatus.CANCELLED, completedAt: new Date() },
+    data: { status: CycleStatus.CANCELLED, completedAt: now },
   });
   await db.alert.updateMany({
-    where: { cycleId: cycle.id, status: { in: ["OPEN", "ACKNOWLEDGED"] } },
-    data: { status: "RESOLVED", resolvedAt: new Date() },
+    where: {
+      cycleId: cycle.id,
+      status: { in: [AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED] },
+    },
+    data: { status: AlertStatus.RESOLVED, resolvedAt: now },
   });
 }
