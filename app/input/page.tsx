@@ -122,18 +122,6 @@ export default async function InputPage({
 
           <aside className="operationContextStack">
             <section className="workspaceCard operationContextCard">
-              <div className="workspaceCardHeader"><div><span>ACTIVE CYCLES</span><h2>Kolam aktif</h2></div></div>
-              <div className="cycleQuickList">
-                {cycles.map((cycle) => (
-                  <Link href={`/ponds/${encodeURIComponent(cycle.pondCode)}`} key={cycle.id}>
-                    <div><strong>{cycle.pondCode}</strong><small>{cycle.species}</small></div><b>›</b>
-                  </Link>
-                ))}
-                {cycles.length === 0 ? <div className="recordEmpty">Tidak ada siklus aktif.</div> : null}
-              </div>
-            </section>
-
-            <section className="workspaceCard operationContextCard">
               <div className="workspaceCardHeader"><div><span>DATA EFFECT</span><h2>Yang berubah</h2></div></div>
               <div className="contextMetricList">
                 <div><span>Pakan</span><strong>Cumulative feed</strong></div>
