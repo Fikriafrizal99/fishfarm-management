@@ -28,7 +28,7 @@
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "^7.0.0",
     "next": "16.2.11",
-    "pdf-lib": "1.17.1",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.16.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
