@@ -133,6 +133,36 @@ The approved mockup is the chart-layout reference, but the plotted values must r
 - Dashboard may show a dashed `Target (ABW)` reference for the primary cycle when the same derivation is available.
 - Never invent intermediate biological targets solely to make the chart look like the mockup.
 
+## Operational Workspace V2
+
+All secondary modules must use the same operational workspace language as Dashboard and Pond Detail.
+
+### Navigation
+
+- Budidaya sub-navigation: `Overview / Input Harian / Sampling / Panen / Biaya`.
+- Sales sub-navigation: `Overview / Leads / Customers / Orders / Fulfillment`.
+- Workspace navigation uses a thin underline active state, not rounded pill buttons.
+- Future CRM modules (`Pipeline / Delivery / Invoice / Payment`) are shown only as clearly disabled future states until their write flows are implemented.
+
+### Forms
+
+- Forms are split into meaningful sections with divider lines.
+- Desktop field height is approximately 34px.
+- Submit actions sit in a compact footer; avoid full-width 40–50px CTA bars.
+- Unit and currency fields use compact integrated unit controls.
+- Supporting rules belong in small contextual notices, not large colored cards.
+
+### Desktop Layout
+
+- Operational input pages use a two-column workspace: primary form + context rail.
+- Context rail may show active cycles, KPI effects, or workflow steps using real application data or stable business rules.
+- Sales management pages use primary form + record table/list; do not leave half the screen as an oversized empty card.
+- Record lists should read like operational tables with column headers, compact row height, and explicit status.
+
+### Data Honesty
+
+Workspace context must never fabricate operational numbers. Contextual text may describe deterministic system behavior (for example, which KPI is recalculated after sampling), but numerical values must come from persisted data or legitimate derivation.
+
 ## Data Integrity Rule
 
 Visual fidelity must never require fabricated operational values.
@@ -163,9 +193,22 @@ Current reference implementation:
 - `app/_components/app-frame.tsx`
 - `app/_components/icons.tsx`
 - `app/_components/growth-chart.tsx`
+- `app/_components/workspace-nav.tsx`
 - `app/page.tsx`
+- `app/budidaya/page.tsx`
+- `app/input/page.tsx`
+- `app/sampling/page.tsx`
+- `app/harvest/page.tsx`
+- `app/expenses/page.tsx`
+- `app/sales/page.tsx`
+- `app/sales/leads/page.tsx`
+- `app/sales/customers/page.tsx`
+- `app/sales/orders/page.tsx`
+- `app/sales/fulfillment/page.tsx`
 - `app/ponds/[pondCode]/page.tsx`
 - `app/globals.css`
 - `app/pixel-pass.css`
+- `app/module-pass.css`
+- `app/workspace-v2.css`
 
 Remaining pages should reuse this visual system instead of introducing a second UI language.
