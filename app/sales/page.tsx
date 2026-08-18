@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSalesDashboard } from "@/src/application/sales/get-sales-dashboard";
 import { SalesIcon } from "@/app/_components/icons";
+import { SalesWorkspaceNav } from "@/app/_components/workspace-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +45,12 @@ export default async function SalesDashboardPage() {
   }
 
   return (
-    <div className="opsPage salesOpsPage">
-      <div className="pageTitleRow">
+    <div className="opsPage crmWorkspacePage salesOpsPage">
+      <div className="workspaceHeadingRow">
         <div>
+          <p className="workspaceKicker">COMMERCIAL OPERATIONS</p>
           <h1>Sales CRM</h1>
-          <p>Lead, customer, order, fulfillment, invoice, dan pembayaran</p>
+          <p>Kelola pipeline, customer, order, alokasi hasil panen, dan arus pembayaran.</p>
         </div>
         <div className="quickActions">
           <Link className="actionButton" href="/sales/leads">+ Lead</Link>
@@ -56,15 +58,7 @@ export default async function SalesDashboardPage() {
         </div>
       </div>
 
-      <nav className="salesWorkspaceNav" aria-label="Sales CRM navigation">
-        <Link href="/sales/leads">Leads</Link>
-        <Link href="/sales/customers">Customers</Link>
-        <Link href="/sales/orders">Orders</Link>
-        <Link href="/sales/fulfillment">Fulfillment</Link>
-        <span className="navComingSoon">Delivery</span>
-        <span className="navComingSoon">Invoice</span>
-        <span className="navComingSoon">Payment</span>
-      </nav>
+      <SalesWorkspaceNav active="overview" />
 
       <section className="salesKpiGrid" aria-label="Sales summary">
         <article><span>Open Leads</span><strong>{number0.format(dashboard.openLeads)}</strong></article>
@@ -136,7 +130,7 @@ export default async function SalesDashboardPage() {
 
       <section className="workspaceCard crmBoundaryCard">
         <SalesIcon size={18} />
-        <div><strong>Commercial boundary V0.8</strong><p>Delivery, Invoice, dan Payment sudah dimodelkan di database, tetapi write UI lengkapnya belum diaktifkan. Label di atas sengaja ditandai belum aktif agar tidak terlihat seperti menu yang bisa diklik.</p></div>
+        <div><strong>Commercial boundary V0.8</strong><p>Pipeline, Delivery, Invoice, dan Payment tetap ditandai sebagai tahap berikutnya sampai write flow bisnisnya lengkap.</p></div>
       </section>
     </div>
   );
