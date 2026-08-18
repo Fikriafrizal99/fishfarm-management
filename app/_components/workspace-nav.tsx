@@ -8,9 +8,7 @@ type SalesTab =
   | "pipeline"
   | "orders"
   | "fulfillment"
-  | "deliveries"
-  | "invoices"
-  | "payments";
+  | "finance";
 type UtilityTab = "history" | "reports";
 
 type NavItem = { key: string; label: string; href?: string; hint?: string };
@@ -49,9 +47,7 @@ export function SalesWorkspaceNav({ active }: { active: SalesTab }) {
     { key: "pipeline", label: "Pipeline", href: "/sales/pipeline" },
     { key: "orders", label: "Orders", href: "/sales/orders" },
     { key: "fulfillment", label: "Fulfillment", href: "/sales/fulfillment" },
-    { key: "deliveries", label: "Delivery", href: "/sales/deliveries" },
-    { key: "invoices", label: "Invoice", href: "/sales/invoices" },
-    { key: "payments", label: "Payment", href: "/sales/payments" },
+    { key: "finance", label: "Finance", href: "/sales/finance" },
   ]} />;
 }
 
