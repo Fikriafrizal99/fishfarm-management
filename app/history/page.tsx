@@ -1,5 +1,6 @@
 import { AppFrame } from "@/app/_components/app-frame";
 import { UtilityWorkspaceNav } from "@/app/_components/workspace-nav";
+import { ExportMenu } from "@/app/_components/export-menu";
 import { getAppShellContext } from "@/src/application/navigation/get-app-shell-context";
 import { getHistoryOverview } from "@/src/application/reporting/get-history-overview";
 
@@ -15,6 +16,11 @@ function statusTone(status: string): string { if (["COMPLETED", "FULFILLED", "PA
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const params = await searchParams;
   const range = { from: rangeDate(params.from), to: rangeDate(params.to, true) };
+  const exportQuery = new URLSearchParams();
+  if (params.from) exportQuery.set("from", params.from);
+  if (params.to) exportQuery.set("to", params.to);
+  const historyExportHref = `/api/export/history${exportQuery.size ? `?${exportQuery.toString()}` : ""}`;
+
   let shell: Awaited<ReturnType<typeof getAppShellContext>> = null;
   let history: Awaited<ReturnType<typeof getHistoryOverview>> = null;
   let databaseError = false;
@@ -23,7 +29,10 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   return (
     <AppFrame active="lainnya" ownerName={shell?.ownerName ?? null} alertCount={shell?.openAlertCount ?? 0} activePonds={shell?.activePonds}>
       <div className="opsPage operationWorkspacePage">
-        <div className="workspaceHeadingRow"><div><p className="workspaceKicker">HISTORY & AUDIT</p><h1>Riwayat</h1><p>Siklus berjalan, hasil final, dan transaksi komersial tanpa mencampur estimasi dengan actual.</p></div></div>
+        <div className="workspaceHeadingRow">
+          <div><p className="workspaceKicker">HISTORY & AUDIT</p><h1>Riwayat</h1><p>Siklus berjalan, hasil final, dan transaksi komersial tanpa mencampur estimasi dengan actual.</p></div>
+          <div className="workspaceHeadingActions"><ExportMenu items={[{ label: "Riwayat CSV", href: historyExportHref }]} /></div>
+        </div>
         <UtilityWorkspaceNav active="history" />
         <form className="reportFilterBar" method="get"><div><label><span>Dari</span><input type="date" name="from" defaultValue={params.from ?? ""} /></label><label><span>Sampai</span><input type="date" name="to" defaultValue={params.to ?? ""} /></label></div><div><a href="/history">Semua data</a><button type="submit">Terapkan periode</button></div></form>
         {databaseError ? <div className="notice errorNotice">Database belum tersambung.</div> : null}
