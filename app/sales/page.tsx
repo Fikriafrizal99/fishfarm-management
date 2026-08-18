@@ -1,5 +1,4 @@
 import { getSalesDashboard } from "@/src/application/sales/get-sales-dashboard";
-import { SalesIcon } from "@/app/_components/icons";
 import { SalesWorkspaceNav } from "@/app/_components/workspace-nav";
 
 export const dynamic = "force-dynamic";
@@ -46,14 +45,14 @@ export default async function SalesDashboardPage() {
         <section className="workspaceCard">
           <div className="sectionHeaderInline"><div><p className="eyebrow dark">Acquisition</p><h2>Lead yang perlu ditindaklanjuti</h2></div></div>
           <div className="crmList">
-            {dashboard.upcomingLeads.length === 0 ? <div className="emptyInline">Belum ada lead aktif.</div> : dashboard.upcomingLeads.map((lead) => <div className="crmRow" key={lead.id}><div><strong>{lead.title}</strong><span>{lead.expectedDemandKg === null ? "Qty belum ditentukan" : `${number1.format(lead.expectedDemandKg)} kg`}{lead.expectedPricePerKg === null ? "" : ` · ${currency.format(lead.expectedPricePerKg)}/kg`}</span></div><div className="crmRowRight"><span className="badge warning">{lead.status}</span><small>{lead.nextFollowUpAt ? dateFormatter.format(lead.nextFollowUpAt) : "No follow-up"}</small></div></div>)}
+            {dashboard.upcomingLeads.length === 0 ? <div className="emptyInline">Belum ada lead aktif.</div> : dashboard.upcomingLeads.map((lead) => <div className="crmRow" key={lead.id}><div><strong>{lead.title}</strong><span>{lead.expectedDemandKg === null ? "Qty belum ditentukan" : `${number1.format(lead.expectedDemandKg)} kg`}{lead.expectedPricePerKg === null ? "" : ` · ${currency.format(lead.expectedPricePerKg)}/kg`}</span></div><div className="crmRowRight"><span className="statusBadge warning">{lead.status}</span><small>{lead.nextFollowUpAt ? dateFormatter.format(lead.nextFollowUpAt) : "No follow-up"}</small></div></div>)}
           </div>
         </section>
 
         <section className="workspaceCard">
           <div className="sectionHeaderInline"><div><p className="eyebrow dark">Order Book</p><h2>Order aktif</h2></div></div>
           <div className="crmList">
-            {dashboard.activeOrders.length === 0 ? <div className="emptyInline">Belum ada order aktif.</div> : dashboard.activeOrders.map((order) => <div className="crmRow" key={order.id}><div><strong>{order.orderNumber} · {order.customerName}</strong><span>{number1.format(order.quantityKg)} kg · {currency.format(order.orderValue)}</span></div><div className="crmRowRight"><span className="badge warning">{order.status}</span><small>{number1.format(order.allocatedKg)} kg allocated</small></div></div>)}
+            {dashboard.activeOrders.length === 0 ? <div className="emptyInline">Belum ada order aktif.</div> : dashboard.activeOrders.map((order) => <div className="crmRow" key={order.id}><div><strong>{order.orderNumber} · {order.customerName}</strong><span>{number1.format(order.quantityKg)} kg · {currency.format(order.orderValue)}</span></div><div className="crmRowRight"><span className="statusBadge warning">{order.status}</span><small>{number1.format(order.allocatedKg)} kg allocated</small></div></div>)}
           </div>
         </section>
       </div>
@@ -64,11 +63,6 @@ export default async function SalesDashboardPage() {
         <div className="crmList">
           {dashboard.inventoryLots.length === 0 ? <div className="emptyInline">Belum ada HarvestLot. Order tetap dapat dicatat dan dialokasikan setelah panen tersedia.</div> : dashboard.inventoryLots.map((lot) => <div className="crmRow" key={lot.id}><div><strong>{lot.lotCode} · {lot.species}</strong><span>{lot.pondCode} · panen {dateFormatter.format(lot.harvestedAt)}</span></div><div className="crmRowRight"><strong>{number1.format(lot.availableKg)} kg available</strong><small>{number1.format(lot.allocatedKg)} / {number1.format(lot.quantityKg)} kg allocated</small></div></div>)}
         </div>
-      </section>
-
-      <section className="workspaceCard crmBoundaryCard">
-        <SalesIcon size={18} />
-        <div><strong>CRM flow lengkap, workspace lebih ringkas</strong><p>Fulfillment memuat Allocation + Delivery. Finance memuat Invoice + Payment + aging piutang. Backend transaction model tetap terpisah dan auditable.</p></div>
       </section>
     </div>
   );
