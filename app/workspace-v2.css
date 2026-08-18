@@ -1,0 +1,496 @@
+/* Operational workspace V2
+   Loaded after globals.css + pixel-pass.css.
+   This layer removes the remaining legacy form/CRM visual language. */
+
+.workspaceHeadingRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 14px;
+}
+.workspaceHeadingRow h1 {
+  margin: 2px 0 4px;
+  color: var(--ink);
+  font-size: 25px;
+  line-height: 1.18;
+  letter-spacing: -.025em;
+  font-weight: 700;
+}
+.workspaceHeadingRow > div:first-child > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.workspaceKicker {
+  margin: 0 0 5px !important;
+  color: var(--teal-dark) !important;
+  font-size: 8px !important;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.workspaceHeadingStats {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 34px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.workspaceHeadingStats span {
+  padding: 0 14px;
+  border-left: 1px solid var(--line);
+  font-size: 9px;
+}
+.workspaceHeadingStats span:first-child { border-left: 0; }
+.workspaceHeadingStats b {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Real workspace tabs: underline navigation, not pill buttons. */
+.workspaceTabBar {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  min-height: 40px;
+  margin-bottom: 10px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.workspaceTabBar::-webkit-scrollbar { display: none; }
+.workspaceTab {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 0 1px;
+  color: #6b7b80;
+  font-size: 10px;
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.workspaceTab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+}
+.workspaceTab:hover { color: var(--ink); }
+.workspaceTab.active {
+  color: var(--teal-dark);
+  font-weight: 700;
+}
+.workspaceTab.active::after { background: var(--teal); }
+.workspaceTab small {
+  color: var(--muted-2);
+  font-size: 7px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.workspaceTab.disabled {
+  color: #a7b0b3;
+  cursor: not-allowed;
+}
+.workspaceFutureTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: -2px 0 14px;
+  color: #9aa5a8;
+}
+.workspaceFutureTabs > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+}
+.workspaceFutureTabs small {
+  padding: 1px 4px;
+  border: 1px solid #dfe5e5;
+  border-radius: 3px;
+  font-size: 6.5px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.operationWorkspacePage,
+.crmWorkspacePage {
+  padding-top: 24px;
+}
+.operationWorkspacePage { width: min(100% - 48px, 1120px); }
+.crmWorkspacePage { width: min(100% - 48px, 1180px); }
+
+.workspaceSplit {
+  display: grid;
+  align-items: start;
+  gap: 12px;
+}
+.operationSplit { grid-template-columns: minmax(0, 1.28fr) minmax(280px, .72fr); }
+.crmSplit { grid-template-columns: minmax(420px, .92fr) minmax(520px, 1.08fr); }
+.fulfillmentSplit { grid-template-columns: minmax(390px, .82fr) minmax(520px, 1.18fr); }
+
+/* Cards */
+.operationalWorkspaceForm,
+.recordWorkspaceCard,
+.operationContextCard {
+  padding: 0;
+  overflow: hidden;
+}
+.workspaceCardHeader {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.workspaceCardHeader > div > span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--teal-dark);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+.workspaceCardHeader h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.workspaceCardHeader > small {
+  color: var(--muted);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+/* Compact form sections */
+.formSectionBlock {
+  display: grid;
+  gap: 9px;
+  padding: 13px 14px;
+  border-bottom: 1px solid #edf0f0;
+}
+.formSectionBlock h3 {
+  margin: 0 0 1px;
+  color: #52686e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.operationalWorkspaceForm label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.operationalWorkspaceForm label > span {
+  color: #52676e;
+  font-size: 9px;
+  font-weight: 600;
+}
+.operationalWorkspaceForm input,
+.operationalWorkspaceForm select,
+.operationalWorkspaceForm textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #dce4e4;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  font-size: 10px;
+}
+.operationalWorkspaceForm input,
+.operationalWorkspaceForm select {
+  height: 34px;
+  padding: 0 10px;
+}
+.operationalWorkspaceForm textarea {
+  min-height: 70px;
+  padding: 9px 10px;
+  line-height: 1.45;
+  resize: vertical;
+}
+.operationalWorkspaceForm input:focus,
+.operationalWorkspaceForm select:focus,
+.operationalWorkspaceForm textarea:focus {
+  border-color: #71aeb0;
+  box-shadow: 0 0 0 2px rgba(8,125,130,.07);
+}
+.operationalWorkspaceForm input:disabled,
+.operationalWorkspaceForm select:disabled { opacity: .55; cursor: not-allowed; }
+.compactFieldGrid {
+  display: grid;
+  gap: 9px;
+}
+.compactFieldGrid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.compactFieldGrid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.compactUnitInput {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid #dce4e4;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+.compactUnitInput.money { grid-template-columns: auto minmax(0, 1fr); }
+.compactUnitInput input {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+.compactUnitInput b {
+  padding: 0 10px;
+  color: #718087;
+  font-size: 8px;
+  font-weight: 650;
+}
+.compactUnitInput:focus-within {
+  border-color: #71aeb0;
+  box-shadow: 0 0 0 2px rgba(8,125,130,.07);
+}
+.workspaceFormActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 10px 14px;
+  background: #fafcfc;
+}
+.workspaceFormActions > span {
+  color: var(--muted);
+  font-size: 8.5px;
+  line-height: 1.4;
+}
+.workspacePrimaryButton {
+  flex: 0 0 auto;
+  min-width: 132px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--teal);
+  border-radius: 6px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+.workspacePrimaryButton:hover { background: var(--teal-dark); }
+.workspacePrimaryButton:disabled { opacity: .5; cursor: not-allowed; }
+.workspaceInlineNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 14px 0;
+  padding: 9px 10px;
+  border: 1px solid #e7d6c5;
+  border-radius: 6px;
+  background: #fffaf5;
+  color: #6f5d4b;
+  font-size: 8.5px;
+}
+.workspaceInlineNotice.neutral {
+  border-color: #dce7e7;
+  background: #f8fbfb;
+  color: #5c7176;
+}
+.workspaceInlineNotice span { flex: 1; }
+.workspaceInlineNotice a,
+.contextActionLink {
+  color: var(--teal-dark);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.contextActionLink.inline { align-self: start; font-size: 8.5px; }
+
+/* Context rail */
+.operationContextStack,
+.fulfillmentBoards {
+  display: grid;
+  gap: 12px;
+}
+.cycleQuickList { display: grid; }
+.cycleQuickList > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #edf0f0;
+  color: inherit;
+  text-decoration: none;
+}
+.cycleQuickList > a:last-child { border-bottom: 0; }
+.cycleQuickList strong,
+.contextMetricList strong {
+  color: #29434a;
+  font-size: 9.5px;
+  font-weight: 650;
+}
+.cycleQuickList small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+}
+.cycleQuickList > a > b { color: #819195; font-size: 14px; }
+.contextMetricList { display: grid; }
+.contextMetricList > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #edf0f0;
+}
+.contextMetricList > div:last-child { border-bottom: 0; }
+.contextMetricList span { color: var(--muted); font-size: 8.5px; }
+.contextMetricList strong { text-align: right; }
+.workflowSteps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.workflowSteps li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 9px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #edf0f0;
+}
+.workflowSteps li > b {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #bfd4d4;
+  border-radius: 50%;
+  color: var(--teal-dark);
+  font-size: 8px;
+}
+.workflowSteps strong { display: block; color: #29434a; font-size: 9px; }
+.workflowSteps span { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; line-height: 1.4; }
+.operationContextCard > .contextActionLink {
+  display: block;
+  padding: 10px 14px;
+  font-size: 8.5px;
+  text-align: right;
+}
+
+/* Record tables */
+.recordTable { min-width: 0; }
+.recordTableHead,
+.recordTableRow {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+}
+.recordTableHead {
+  min-height: 32px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fafbfb;
+  color: #78878c;
+  font-size: 7.5px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .025em;
+}
+.recordTableRow {
+  min-height: 58px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #edf0f0;
+}
+.recordTableRow:last-child { border-bottom: 0; }
+.recordTableRow > div { min-width: 0; }
+.recordTableRow strong {
+  display: block;
+  overflow: hidden;
+  color: #29434a;
+  font-size: 9px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recordTableRow small {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7.5px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recordEmpty {
+  padding: 20px 14px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+}
+.leadRecordTable .recordTableHead,
+.leadRecordTable .recordTableRow { grid-template-columns: minmax(170px, 1.55fr) minmax(100px, .8fr) minmax(105px, .9fr) auto; }
+.customerRecordTable .recordTableHead,
+.customerRecordTable .recordTableRow { grid-template-columns: minmax(160px, 1.3fr) minmax(130px, 1fr) minmax(90px, .7fr) auto; }
+.orderRecordTable .recordTableHead,
+.orderRecordTable .recordTableRow { grid-template-columns: minmax(150px, 1.2fr) minmax(95px, .7fr) minmax(90px, .7fr) minmax(105px, .85fr) auto; }
+.fulfillmentRecordTable .recordTableHead,
+.fulfillmentRecordTable .recordTableRow { grid-template-columns: minmax(150px, 1.25fr) minmax(95px, .75fr) minmax(100px, .8fr); }
+.compactRecordCard .recordTableRow { min-height: 52px; }
+
+/* Keep summary cards secondary to workspace navigation. */
+.crmWorkspacePage .salesKpiGrid { margin-top: 4px; }
+.crmWorkspacePage .notice,
+.operationWorkspacePage .notice { margin: 0 0 10px; }
+
+@media (max-width: 1080px) {
+  .crmSplit,
+  .operationSplit,
+  .fulfillmentSplit { grid-template-columns: 1fr; }
+  .operationContextStack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fulfillmentBoards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .operationWorkspacePage,
+  .crmWorkspacePage { width: min(100% - 28px, 1180px); padding-top: 18px; }
+  .workspaceHeadingRow { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .workspaceHeadingStats span:first-child { padding-left: 0; }
+  .workspaceTabBar { gap: 18px; }
+  .compactFieldGrid.two,
+  .compactFieldGrid.three,
+  .operationContextStack,
+  .fulfillmentBoards { grid-template-columns: 1fr; }
+  .workspaceFormActions { align-items: stretch; flex-direction: column; }
+  .workspacePrimaryButton { width: 100%; }
+  .recordTable { overflow-x: auto; }
+  .recordTableHead,
+  .recordTableRow { min-width: 660px; }
+  .fulfillmentRecordTable .recordTableHead,
+  .fulfillmentRecordTable .recordTableRow { min-width: 480px; }
+}
