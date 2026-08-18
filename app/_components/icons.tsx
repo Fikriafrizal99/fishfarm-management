@@ -1,8 +1,8 @@
-import type { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
-function IconBase({ size = 18, children, ...props }: IconProps & { children: React.ReactNode }) {
+function IconBase({ size = 18, children, ...props }: IconProps & { children: ReactNode }) {
   return (
     <svg
       viewBox="0 0 24 24"
