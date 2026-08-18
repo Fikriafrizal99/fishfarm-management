@@ -88,8 +88,11 @@ export async function getDeliveryWorkspace() {
       const allocatedKg = item.allocations
         .filter((allocation) => allocation.status !== "CANCELLED")
         .reduce((sum, allocation) => sum + Number(allocation.allocatedKg), 0);
-      const deliveredKg = item.deliveryItems
+      const bookedDeliveryKg = item.deliveryItems
         .filter((row) => row.delivery.status !== DeliveryStatus.CANCELLED)
+        .reduce((sum, row) => sum + Number(row.quantityKg), 0);
+      const deliveredKg = item.deliveryItems
+        .filter((row) => row.delivery.status === DeliveryStatus.DELIVERED)
         .reduce((sum, row) => sum + Number(row.quantityKg), 0);
       return {
         id: item.id,
@@ -99,8 +102,9 @@ export async function getDeliveryWorkspace() {
         species: item.species.commonName,
         quantityKg: Number(item.quantityKg),
         allocatedKg,
+        bookedDeliveryKg,
         deliveredKg,
-        deliverableKg: Math.max(allocatedKg - deliveredKg, 0),
+        deliverableKg: Math.max(allocatedKg - bookedDeliveryKg, 0),
       };
     })
     .filter((item) => item.deliverableKg > 0);
@@ -202,5 +206,3 @@ export async function getPaymentWorkspace() {
 
   return { invoices: payableInvoices, payments };
 }
-
-export { OpportunityStatus };
