@@ -106,7 +106,9 @@ Behavior:
 - `/expenses` — direct operating costs
 - `/ponds/[pondCode]` — pond/cycle detail
 - `/alerts` — alert center
-- `/more` — secondary modules
+- `/more` — utility/insight workspace
+- `/history` — unified production + commercial history
+- `/reports` — production + commercial performance summary
 - `/api/health/db` — PostgreSQL health check
 
 ### Sales CRM
@@ -121,6 +123,17 @@ Behavior:
 - `/sales/invoices` — billing / invoice issuance
 - `/sales/payments` — DP, partial payment, and settlement
 
+## Navigation Principle
+
+The application intentionally limits navigation duplication:
+
+1. **Sidebar** selects the major area: Dashboard, Budidaya, Sales CRM, or Lainnya.
+2. **Workspace tabs** select the submodule inside that area.
+
+Header cards and context rails should not repeat links already available in those two navigation layers. Form selectors such as `Kolam / Siklus` remain because they choose transaction context, not navigation.
+
+`Lainnya` is reserved for History, Reports, and system utilities; it does not duplicate Budidaya or Sales CRM module links.
+
 ## Sales Dashboard KPIs
 
 - open leads
@@ -131,6 +144,30 @@ Behavior:
 - available harvested kg
 - outstanding receivables
 - cash collected this month
+
+## History & Reporting Baseline
+
+`/history` is a read-only audit view combining:
+
+- production cycles,
+- harvested kg,
+- production cost/revenue/profit,
+- Sales Orders,
+- delivered kg,
+- invoiced amount,
+- paid amount,
+- outstanding receivables.
+
+`/reports` provides a read-only business summary for:
+
+- production cycle count and completed cycles,
+- harvested kg, production cost/revenue/profit,
+- active customers and OPEN pipeline,
+- order kg/value and delivered kg,
+- invoiced / collected / outstanding values,
+- basic customer contribution by ordered quantity/value and collection.
+
+These reports derive from existing source-of-truth records and introduce no duplicate accounting ledger.
 
 ## HarvestLot Behavior
 
@@ -193,6 +230,22 @@ PLANNED → DISPATCHED → DELIVERED
 ISSUED → PARTIALLY_PAID → PAID
    ↘ VOID (only before payment exists)
 ```
+
+## Authentication / Authorization Direction
+
+Authentication is intentionally deferred while the product is personal/single-user.
+
+The database foundation remains ready for a later multi-user layer through:
+
+```text
+User
+  ↓
+FarmMembership
+  ↓
+FarmRole
+```
+
+The current `OWNER / MANAGER / OPERATOR / VIEWER` domain foundation should not be removed. Authentication and server-side permission enforcement can be added later without redesigning production or CRM entities.
 
 ## Transitional Harvest Commercial Fields
 
@@ -271,6 +324,7 @@ Cross-row balances such as order over-allocation, delivery beyond allocated stoc
 - HarvestLot/Fulfillment is the production-to-sales bridge
 - invoice totals are historical billing snapshots
 - payment is the cash-collection source of truth
+- reporting reads source-of-truth transactions instead of creating a second ledger
 - alerts must explain why they fired
 - AI is a later interpretation layer, not a replacement for formulas or ledgers
 
@@ -300,7 +354,7 @@ Cross-row balances such as order over-allocation, delivery beyond allocated stoc
 
 The V0.8 production/database foundation has already passed local bootstrap, Prisma generation, DB constraints/seed, Decision Engine evaluation, TypeScript, production build, DB health check, and visual sanity checks.
 
-**V0.9 CRM flow is implemented remotely and now requires local validation.**
+**V0.9 CRM flow plus the read-only History/Reports baseline are implemented remotely and require local validation.**
 
 Validation gate:
 
@@ -323,11 +377,14 @@ Pipeline
 → Invoice
 → Payment
 → verify Sales Dashboard KPIs/statuses
+→ verify /history reconciliation
+→ verify /reports totals
 ```
 
 ## Status
 
 **Version:** 0.9.0  
-**Phase:** End-to-End Sales CRM Flow  
+**Phase:** End-to-End Sales CRM Flow + History/Reporting Baseline  
 **Production core:** locally validated V0.8 baseline  
-**CRM V0.9:** implemented, local runtime validation pending
+**CRM V0.9:** implemented, local runtime validation pending  
+**History/Reports:** read-only baseline implemented, local validation pending
