@@ -19,9 +19,7 @@ export async function submitPayment(formData: FormData): Promise<void> {
     const methodRaw = String(formData.get("method") ?? PaymentMethod.TRANSFER).trim();
     if (!invoiceId) throw new Error("Invoice wajib dipilih");
     if (!paidDate) throw new Error("Tanggal pembayaran wajib diisi");
-    if (!Object.values(PaymentMethod).includes(methodRaw as PaymentMethod)) {
-      throw new Error("Metode pembayaran tidak valid");
-    }
+    if (!Object.values(PaymentMethod).includes(methodRaw as PaymentMethod)) throw new Error("Metode pembayaran tidak valid");
 
     await recordPayment({
       invoiceId,
@@ -34,12 +32,11 @@ export async function submitPayment(formData: FormData): Promise<void> {
 
     revalidatePath("/sales");
     revalidatePath("/sales/orders");
-    revalidatePath("/sales/invoices");
-    revalidatePath("/sales/payments");
+    revalidatePath("/sales/finance");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal mencatat pembayaran";
-    redirect(`/sales/payments?error=${encodeURIComponent(message)}`);
+    redirect(`/sales/finance?error=${encodeURIComponent(message)}#payment`);
   }
 
-  redirect("/sales/payments?saved=1");
+  redirect("/sales/finance?paymentSaved=1#payment");
 }
