@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getActiveCycleOptions } from "@/src/application/cycles/get-active-cycle-options";
 import { getAppShellContext } from "@/src/application/navigation/get-app-shell-context";
 import { AppFrame } from "@/app/_components/app-frame";
-import { HarvestIcon } from "@/app/_components/icons";
+import { BudidayaWorkspaceNav } from "@/app/_components/workspace-nav";
 import { submitHarvest } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -43,86 +43,92 @@ export default async function HarvestPage({
       alertCount={shell?.openAlertCount ?? 0}
       activePonds={shell?.activePonds}
     >
-      <div className="opsPage formWorkspacePage">
-        <div className="pageTitleRow formPageTitle">
+      <div className="opsPage operationWorkspacePage">
+        <div className="workspaceHeadingRow">
           <div>
-            <Link className="detailBackLink" href="/budidaya">← Kembali ke Budidaya</Link>
-            <h1>Catat Panen</h1>
-            <p>Panen menghasilkan HarvestLot. Alokasi ke order dilakukan terpisah melalui Sales CRM.</p>
+            <p className="workspaceKicker">BUDIDAYA / HARVEST</p>
+            <h1>Panen</h1>
+            <p>Catat realisasi panen dan hasilkan HarvestLot untuk proses fulfillment Sales CRM.</p>
           </div>
-          <span className="statusBadge warning"><HarvestIcon size={12} /> PANEN</span>
+          <div className="workspaceHeadingStats"><span><b>{cycles.length}</b> siklus dapat dipanen</span></div>
         </div>
+
+        <BudidayaWorkspaceNav active="harvest" />
 
         {params.error ? <div className="notice errorNotice">{params.error}</div> : null}
         {databaseError ? <div className="notice errorNotice">Database belum tersambung. Form akan aktif setelah development database dijalankan.</div> : null}
 
-        <form action={submitHarvest} className="workspaceCard inputForm operationalFormCard">
-          <label>
-            <span>Kolam / Siklus</span>
-            <select name="cycleId" required disabled={cycles.length === 0} defaultValue={selectedCycleId}>
-              <option value="">Pilih kolam</option>
-              {cycles.map((cycle) => <option key={cycle.id} value={cycle.id}>{cycle.label}</option>)}
-            </select>
-          </label>
+        <div className="workspaceSplit operationSplit">
+          <form action={submitHarvest} className="workspaceCard operationalWorkspaceForm">
+            <div className="workspaceCardHeader">
+              <div><span>HARVEST EVENT</span><h2>Catat realisasi panen</h2></div>
+              <small>Produksi → HarvestLot</small>
+            </div>
 
-          <div className="formGrid">
-            <label>
-              <span>Tanggal panen</span>
-              <input name="harvestedDate" type="date" defaultValue={todayInJakarta()} required />
-            </label>
-            <label>
-              <span>Jenis panen</span>
-              <select name="harvestType" defaultValue="PARTIAL" required>
-                <option value="PARTIAL">Panen Parsial</option>
-                <option value="FINAL">Panen Final / Tutup Siklus</option>
-              </select>
-            </label>
-          </div>
+            <div className="formSectionBlock">
+              <h3>Siklus & waktu</h3>
+              <div className="compactFieldGrid two">
+                <label>
+                  <span>Kolam / Siklus</span>
+                  <select name="cycleId" required disabled={cycles.length === 0} defaultValue={selectedCycleId}>
+                    <option value="">Pilih kolam</option>
+                    {cycles.map((cycle) => <option key={cycle.id} value={cycle.id}>{cycle.label}</option>)}
+                  </select>
+                </label>
+                <label><span>Tanggal panen</span><input name="harvestedDate" type="date" defaultValue={todayInJakarta()} required /></label>
+              </div>
+              <label>
+                <span>Jenis panen</span>
+                <select name="harvestType" defaultValue="PARTIAL" required>
+                  <option value="PARTIAL">Panen Parsial</option>
+                  <option value="FINAL">Panen Final / Tutup Siklus</option>
+                </select>
+              </label>
+            </div>
 
-          <div className="formGrid">
-            <label>
-              <span>Berat panen</span>
-              <div className="inputWithUnit"><input name="weightKg" type="number" min="0.001" step="0.001" placeholder="810" required /><b>kg</b></div>
-            </label>
-            <label>
-              <span>Jumlah ikan (opsional)</span>
-              <div className="inputWithUnit"><input name="fishCount" type="number" min="1" step="1" placeholder="Isi jika dihitung" /><b>ekor</b></div>
-            </label>
-          </div>
+            <div className="formSectionBlock">
+              <h3>Hasil panen</h3>
+              <div className="compactFieldGrid two">
+                <label><span>Berat panen</span><div className="compactUnitInput"><input name="weightKg" type="number" min="0.001" step="0.001" placeholder="810" required /><b>kg</b></div></label>
+                <label><span>Jumlah ikan (opsional)</span><div className="compactUnitInput"><input name="fishCount" type="number" min="1" step="1" placeholder="Isi jika dihitung" /><b>ekor</b></div></label>
+                <label><span>Harga realisasi/kg <em className="fieldTag">transisi</em></span><div className="compactUnitInput money"><b>Rp</b><input name="sellingPricePerKg" type="number" min="1" step="1" placeholder="23000" required /></div></label>
+                <label><span>Biaya panen</span><div className="compactUnitInput money"><b>Rp</b><input name="harvestCost" type="number" min="0" step="1" placeholder="0" /></div></label>
+              </div>
+            </div>
 
-          <div className="formGrid">
-            <label>
-              <span>Harga realisasi per kg <em className="fieldTag">transisi V0.8</em></span>
-              <div className="inputWithUnit moneyInput"><b>Rp</b><input name="sellingPricePerKg" type="number" min="1" step="1" placeholder="23000" required /></div>
-            </label>
-            <label>
-              <span>Biaya panen (opsional)</span>
-              <div className="inputWithUnit moneyInput"><b>Rp</b><input name="harvestCost" type="number" min="0" step="1" placeholder="0" /></div>
-            </label>
-          </div>
+            <div className="formSectionBlock">
+              <h3>Catatan komersial transisi</h3>
+              <label><span>Pembeli langsung (opsional) <em className="fieldTag">legacy</em></span><input name="buyerName" type="text" placeholder="Kosongkan jika dikelola lewat Sales CRM" /></label>
+              <label><span>Catatan panen</span><textarea name="notes" rows={3} placeholder="Grade campur, waktu panen, kualitas, packing, dll." /></label>
+            </div>
 
-          <label>
-            <span>Pembeli langsung (opsional) <em className="fieldTag">legacy</em></span>
-            <input name="buyerName" type="text" placeholder="Kosongkan jika penjualan dikelola melalui Sales CRM" />
-          </label>
+            <div className="workspaceFormActions">
+              <span>Setiap panen otomatis membuat HarvestLot.</span>
+              <button className="workspacePrimaryButton" type="submit" disabled={cycles.length === 0}>Simpan Panen</button>
+            </div>
+          </form>
 
-          <label>
-            <span>Catatan panen</span>
-            <textarea name="notes" rows={4} placeholder="Contoh: grade campur, panen selesai pukul 08.30, kualitas baik" />
-          </label>
+          <aside className="operationContextStack">
+            <section className="workspaceCard operationContextCard">
+              <div className="workspaceCardHeader"><div><span>FLOW</span><h2>Sesudah panen</h2></div></div>
+              <ol className="workflowSteps">
+                <li><b>1</b><div><strong>Harvest tersimpan</strong><span>Berat dan hasil panen masuk ke siklus.</span></div></li>
+                <li><b>2</b><div><strong>HarvestLot dibuat</strong><span>Lot menjadi inventory komersial yang bisa dialokasikan.</span></div></li>
+                <li><b>3</b><div><strong>Fulfillment</strong><span>Sales Order mengambil stok dari HarvestLot, bukan dari kolam langsung.</span></div></li>
+              </ol>
+              <Link className="contextActionLink" href="/sales/fulfillment">Buka Fulfillment →</Link>
+            </section>
 
-          <div className="infoBox harvestWarning">
-            <strong>Boundary Produksi ↔ Sales</strong>
-            <span>Setiap panen membuat HarvestLot. Order tidak menunjuk kolam secara langsung; gunakan Fulfillment untuk mengalokasikan HarvestLot ke Sales Order.</span>
-            <Link className="inlineInfoLink" href="/sales/fulfillment">Buka Fulfillment →</Link>
-          </div>
-          <div className="infoBox">
-            <strong>Panen Final</strong>
-            <span>Panen Final mengubah siklus menjadi COMPLETED dan mengaktifkan Actual HPP, laba, margin, serta Final FCR.</span>
-          </div>
-
-          <button className="primaryButton" type="submit" disabled={cycles.length === 0}>Simpan Panen</button>
-        </form>
+            <section className="workspaceCard operationContextCard">
+              <div className="workspaceCardHeader"><div><span>CYCLE EFFECT</span><h2>Parsial vs final</h2></div></div>
+              <div className="contextMetricList">
+                <div><span>Panen Parsial</span><strong>HARVESTING</strong></div>
+                <div><span>Panen Final</span><strong>COMPLETED</strong></div>
+                <div><span>Final metrics</span><strong>HPP · Profit · FCR</strong></div>
+              </div>
+            </section>
+          </aside>
+        </div>
       </div>
     </AppFrame>
   );
