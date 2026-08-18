@@ -11,6 +11,7 @@ type SalesTab =
   | "deliveries"
   | "invoices"
   | "payments";
+type UtilityTab = "overview" | "history" | "reports";
 
 type NavItem = {
   key: string;
@@ -82,6 +83,20 @@ export function SalesWorkspaceNav({ active }: { active: SalesTab }) {
         { key: "deliveries", label: "Delivery", href: "/sales/deliveries" },
         { key: "invoices", label: "Invoice", href: "/sales/invoices" },
         { key: "payments", label: "Payment", href: "/sales/payments" },
+      ]}
+    />
+  );
+}
+
+export function UtilityWorkspaceNav({ active }: { active: UtilityTab }) {
+  return (
+    <WorkspaceTabs
+      active={active}
+      ariaLabel="Navigasi riwayat dan laporan"
+      items={[
+        { key: "overview", label: "Overview", href: "/more" },
+        { key: "history", label: "Riwayat", href: "/history" },
+        { key: "reports", label: "Laporan", href: "/reports" },
       ]}
     />
   );
