@@ -1,16 +1,7 @@
 # FishFarm Management — Operational Design System
 
-Status: **APPROVED REFERENCE**  
-Applies from: V0.8 UI redesign
-
-## Source of Truth
-
-The approved redesign mockup showing these two screens is the visual source of truth:
-
-1. Dashboard Farm
-2. Pond Detail — KLM-001
-
-Implementation should preserve the mockup's hierarchy and density rather than returning to the previous rounded-card SaaS style.
+Status: **FINAL SYSTEM REFERENCE**  
+Applies from: V0.11 finalization
 
 ## Product Visual Language
 
@@ -31,41 +22,37 @@ Required characteristics:
 
 ## Typography
 
-Primary font: **Inter** loaded through `next/font`.
+Primary font: **Inter** loaded through `next/font` and enforced on body, native controls, tables, and export-menu controls.
 
-Recommended scale:
+Final scale:
 
 | Role | Size | Weight |
 |---|---:|---:|
-| Page title | 25px | 700 |
-| Section title | 13–14px | 700 |
-| KPI value | 16–20px | 700 |
-| Body | 11–14px | 400–500 |
-| Label | 9–10px | 500–600 |
-| Status badge | 9px | 700 |
+| Page title | 27px desktop / 24px compact | 700 |
+| Section title | 15px | 700 |
+| Card title | 14px | 700 |
+| Body / subtitle | 12px | 400–500 |
+| Form label | 10.5px | 500–600 |
+| Metadata | 9.5px | 500–600 |
+| Table header | 9–9.5px | 600 |
+| Table body | 10.5–11px | 400–650 |
+| Status badge | 9.5px | 700 |
 
-Avoid widespread 800/850/900 weights.
+Avoid widespread 800/850/900 weights and avoid introducing another font family.
+
+`app/final-polish.css` is loaded **after all feature CSS** so feature modules cannot accidentally override the final typography scale.
 
 ## Shape System
-
-Use only a small radius hierarchy:
 
 - major operational surface: 8–11px
 - controls: 6–7px
 - status badges/avatar only: fully rounded
 
-Do not use 20–28px card radii for normal workspace sections.
+Do not use large decorative SaaS-card radii.
 
 ## Surface System
 
-Main canvas:
-
-- light neutral gray
-- white operational surfaces
-- border-first separation
-- no decorative gradient hero
-
-Default surface treatment:
+Default workspace surface:
 
 ```text
 background: white
@@ -74,141 +61,177 @@ shadow: none
 radius: ~8px
 ```
 
+Canvas remains light neutral gray. Decorative gradient heroes are not part of the application language.
+
 ## Color Roles
 
 - Teal: brand, primary action, active navigation, primary chart line
-- Green: healthy / ON TARGET
-- Orange: monitor / warning / attention
-- Red: action required / destructive states
+- Green: healthy / ON TARGET / completed-positive state
+- Orange: monitor / warning / outstanding attention
+- Red: destructive / action required / cancelled
 - Gray: supporting copy, borders, target/reference chart line
 
-Teal should not dominate the page background.
+## Navigation Principle
 
-## Desktop App Chrome
+The product uses only two primary navigation layers:
 
-### Dashboard
+1. **Sidebar** — `Dashboard | Budidaya | Sales CRM | Lainnya`
+2. **Workspace tabs** — submodules within the selected area
 
-- 62px top bar
-- 184px left sidebar
-- Dashboard / Budidaya / Sales CRM / Alert / Lainnya navigation
-- compact farm state summary at bottom of sidebar
+Alert Center is accessed through the topbar bell. The bell receives an active state on `/alerts`, so Alert does not need a duplicate sidebar item.
 
-### Pond Detail
+All normal desktop pages, including Pond Detail, use the same topbar + sidebar shell. Detail pages no longer switch to a separate compact application chrome.
 
-- compact top bar
-- sidebar collapsed/hidden to maximize operational working area
-- back navigation to Budidaya
+### Budidaya tabs
 
-## Dashboard Composition
+```text
+Overview | Kolam | Siklus | Input Harian | Sampling | Panen | Biaya
+```
 
-Order:
+### Sales CRM tabs
 
-1. Dashboard Farm title + quick actions
-2. four compact KPI summaries
-3. Perlu Perhatian strip
-4. Cycle Overview table
-5. ABW growth chart + recent activity
+```text
+Overview | Leads | Customers | Pipeline | Orders | Fulfillment | Finance
+```
 
-Do not restore the previous large greeting hero.
+Fulfillment contains Allocation + Delivery as internal workflow sections. Finance contains Invoice + Payment + Aging Piutang. Their database models remain separate.
 
-## Pond Detail Composition
+### Utility tabs
 
-Order:
+```text
+Riwayat | Laporan
+```
 
-1. Pond title + status + quick actions
-2. single KPI strip
-3. grouped Populasi / Performa / Kolam data
-4. ABW line chart
-5. Aktivitas Terbaru / Biaya Berjalan / Alert & Catatan
+`/more` redirects to `/history`.
 
-Do not use horizontal progress bars for growth history.
+## Form System
+
+- forms are split into meaningful sections with divider lines
+- desktop field height is 37px in the final scale
+- submit actions sit in a compact footer
+- unit/currency fields use integrated suffix/prefix controls
+- supporting rules use small contextual notices
+- native input/select/textarea controls must inherit Inter
+- input forms select data context; they are not navigation shortcuts
+
+## Table / Record System
+
+- table headers use one shared 9–9.5px scale
+- table bodies use 10.5–11px
+- status always uses `statusBadge`; do not reintroduce legacy `badge` styles
+- row actions are compact and visually secondary
+- wide operational tables may scroll horizontally instead of shrinking text below readable size
+
+## Dashboard
+
+Composition:
+
+1. page heading
+2. four KPI summaries
+3. attention strip
+4. cycle overview table
+5. ABW trend + recent activity
+
+No greeting hero and no duplicate quick-action toolbar.
+
+## Budidaya Overview
+
+Shows farm-level current state and active cycles. Master-data creation belongs in `Kolam` and `Siklus`, not duplicated on Overview.
+
+## Pond Detail
+
+Composition:
+
+1. pond/cycle title + status
+2. KPI strip
+3. grouped Populasi / Performa / Kolam
+4. ABW sampling chart
+5. Aktivitas / Biaya / Alert & Catatan
+6. actual-final summary only when cycle is completed
+
+Pond Detail uses the same sidebar shell as all other application pages.
 
 ## Growth Chart Rules
 
-The approved mockup is the chart-layout reference, but the plotted values must remain data-honest.
+- X-axis follows observed sampling dates
+- future harvest targets do not stretch the observed time domain
+- `Target ABW estimasi` is interpolated on observed dates
+- target line requires at least two observed points
+- one observation is a point, not a trend
+- zero values must render as zero-width/zero-height chart marks; never fabricate minimum bars that imply activity
 
-- X-axis on pond detail follows observed sampling dates; a future harvest target must not stretch the chart domain and compress the observed points to the left.
-- `Target ABW estimasi` is interpolated on the same observed sampling dates using the derived target average weight and target harvest date.
-- A target/reference line is shown only when at least two sampling observations exist. One observation is a point, not a trend.
-- Dashboard may show a dashed `Target (ABW)` reference for the primary cycle when the same derivation is available.
-- Never invent intermediate biological targets solely to make the chart look like the mockup.
+## History Semantics
 
-## Operational Workspace V2
+Active cycles show current operational state:
 
-All secondary modules must use the same operational workspace language as Dashboard and Pond Detail.
+- SR
+- FCR
+- ABW
+- estimated biomass
+- running cost
+- target harvest
 
-### Navigation
+They do **not** display running cost as final profit/loss.
 
-- Budidaya sub-navigation: `Overview / Input Harian / Sampling / Panen / Biaya`.
-- Sales sub-navigation: `Overview / Leads / Customers / Orders / Fulfillment`.
-- Workspace navigation uses a thin underline active state, not rounded pill buttons.
-- Future CRM modules (`Pipeline / Delivery / Invoice / Payment`) are shown only as clearly disabled future states until their write flows are implemented.
+Only completed cycles show:
 
-### Forms
+- actual harvested kg
+- Actual HPP
+- revenue
+- profit
+- margin
 
-- Forms are split into meaningful sections with divider lines.
-- Desktop field height is approximately 34px.
-- Submit actions sit in a compact footer; avoid full-width 40–50px CTA bars.
-- Unit and currency fields use compact integrated unit controls.
-- Supporting rules belong in small contextual notices, not large colored cards.
+## Report Semantics
 
-### Desktop Layout
+Reports distinguish period activity from actual-final profitability.
 
-- Operational input pages use a two-column workspace: primary form + context rail.
-- Context rail may show active cycles, KPI effects, or workflow steps using real application data or stable business rules.
-- Sales management pages use primary form + record table/list; do not leave half the screen as an oversized empty card.
-- Record lists should read like operational tables with column headers, compact row height, and explicit status.
+- `Revenue − Biaya Periode` is a period cash/operational difference, not automatically final cycle profit
+- `Margin Final` is shown only when a legitimate final margin exists
+- zero revenue/harvest renders as zero, not a cosmetic minimum bar
+- if no harvest occurred, the harvest chart shows an explicit empty state
+- PDF/CSV export uses the same terminology as the on-screen report
 
-### Data Honesty
+## CRM Semantics
 
-Workspace context must never fabricate operational numbers. Contextual text may describe deterministic system behavior (for example, which KPI is recalculated after sampling), but numerical values must come from persisted data or legitimate derivation.
+- Lead / Pipeline / Order use commercial demand data
+- Fulfillment connects order demand to HarvestLot supply
+- Delivery is physical hand-over
+- Invoice is a billing snapshot
+- Payment is cash collection
+- aging is based on invoice due date
+- implementation/version notes must never appear as operational cards in the production UI
+
+## Responsive Direction
+
+On narrower screens:
+
+- workspace columns collapse to one column
+- KPI grids collapse progressively
+- workspace tabs scroll horizontally
+- record tables remain horizontally scrollable when required
+- typography may reduce page title to 24px but must not reduce operational text to unreadable micro sizes
+
+## CSS Layer Order
+
+Current load order:
+
+1. `globals.css`
+2. `pixel-pass.css`
+3. `module-pass.css`
+4. `workspace-v2.css`
+5. `phase-ab.css`
+6. `export-crm.css`
+7. **`final-polish.css`** — authoritative final override
+
+New feature CSS must not be imported after `final-polish.css` without revisiting this contract.
 
 ## Data Integrity Rule
 
 Visual fidelity must never require fabricated operational values.
 
-If the mockup contains a visual element that requires data not available in the domain model:
+If an element requires data that does not exist:
 
-- derive it only when the derivation is legitimate and labeled,
-- otherwise show the nearest truthful state.
+- derive it only when legitimate and label it clearly,
+- otherwise show a truthful empty/unavailable state.
 
-Example: the chart may show `Target ABW estimasi` derived from target harvest biomass and current estimated population; it must not silently invent a biological target.
-
-## Responsive Direction
-
-Desktop follows the approved mockup closely.
-
-On mobile:
-
-- sidebar becomes bottom navigation,
-- KPI rows collapse to 2 columns,
-- quick actions scroll horizontally when needed,
-- operational groups stack,
-- wide tables/charts may scroll horizontally rather than shrinking into unreadability.
-
-## Implementation Files
-
-Current reference implementation:
-
-- `app/_components/app-frame.tsx`
-- `app/_components/icons.tsx`
-- `app/_components/growth-chart.tsx`
-- `app/_components/workspace-nav.tsx`
-- `app/page.tsx`
-- `app/budidaya/page.tsx`
-- `app/input/page.tsx`
-- `app/sampling/page.tsx`
-- `app/harvest/page.tsx`
-- `app/expenses/page.tsx`
-- `app/sales/page.tsx`
-- `app/sales/leads/page.tsx`
-- `app/sales/customers/page.tsx`
-- `app/sales/orders/page.tsx`
-- `app/sales/fulfillment/page.tsx`
-- `app/ponds/[pondCode]/page.tsx`
-- `app/globals.css`
-- `app/pixel-pass.css`
-- `app/module-pass.css`
-- `app/workspace-v2.css`
-
-Remaining pages should reuse this visual system instead of introducing a second UI language.
+Observed, estimated, projected, and actual-final values remain distinct.
