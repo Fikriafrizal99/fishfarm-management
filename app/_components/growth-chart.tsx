@@ -43,11 +43,15 @@ export function GrowthChart({
   const maxTime = Math.max(...allPoints.map((point) => point.date.getTime()));
   const rawMax = Math.max(...allPoints.map((point) => point.value), 100);
   const maxValue = Math.max(100, Math.ceil(rawMax / 100) * 100);
-  const width = 720;
-  const left = 44;
-  const right = 20;
-  const top = 18;
-  const bottom = 42;
+
+  // A wider viewBox keeps desktop charts compact vertically as the workspace grows.
+  // This mirrors the approved redesign mockup instead of letting SVG height balloon
+  // proportionally on wide monitors.
+  const width = 1000;
+  const left = 52;
+  const right = 24;
+  const top = 20;
+  const bottom = 44;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
   const timeSpan = Math.max(maxTime - minTime, 1);
@@ -104,7 +108,7 @@ export function GrowthChart({
                 className="chartGridLine"
               />
               <text
-                x={left - 10}
+                x={left - 12}
                 y={gy + 4}
                 textAnchor="end"
                 className="chartAxisText"
@@ -119,7 +123,7 @@ export function GrowthChart({
           <text
             key={date.getTime()}
             x={x(date)}
-            y={height - 12}
+            y={height - 11}
             textAnchor="middle"
             className="chartAxisText"
           >
@@ -153,13 +157,13 @@ export function GrowthChart({
                       <circle
                         cx={x(point.date)}
                         cy={y(point.value)}
-                        r="3.8"
+                        r="4"
                         fill={toneColor[item.tone]}
                       />
                       {showPointLabels ? (
                         <text
                           x={x(point.date)}
-                          y={y(point.value) - 10}
+                          y={y(point.value) - 11}
                           textAnchor="middle"
                           className="chartPointLabel"
                         >
