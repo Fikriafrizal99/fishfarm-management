@@ -1,0 +1,134 @@
+/* Phase A+B — master data, correction ledgers, history and reporting */
+.managementSplit { grid-template-columns: minmax(420px,.82fr) minmax(540px,1.18fr); }
+.managementListCard,
+.historyLedgerCard,
+.correctionCard,
+.comparisonCard,
+.reportTrendCard { overflow: hidden; }
+.managementListCard { padding: 0; }
+.managementListCard .recordTableWrap { overflow-x: auto; }
+.managementListCard table.recordTable { width: 100%; border-collapse: collapse; font-size: 9px; }
+.managementListCard table.recordTable th { padding: 9px 10px; background: #fafbfb; color: #718087; font-size: 7.5px; text-align: left; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.managementListCard table.recordTable td { padding: 10px; color: #334b52; border-bottom: 1px solid #edf0f0; vertical-align: middle; }
+.managementListCard table.recordTable tr:last-child td { border-bottom: 0; }
+.managementListCard table.recordTable strong { display: block; color: var(--ink); font-size: 9.5px; }
+.managementListCard table.recordTable small { display: block; margin-top: 2px; color: var(--muted); font-size: 7.5px; }
+.tableAction { color: var(--teal-dark); font-size: 8.5px; font-weight: 700; text-decoration: none; }
+.workspaceCardHeader > a { color: var(--teal-dark); font-size: 8.5px; font-weight: 700; text-decoration: none; }
+.historyLedgerCard { margin-top: 12px; padding: 0; }
+.historyLedgerCard .sectionHeaderInline { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.historyTwoColumn { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 12px; }
+.correctionCard { margin-top: 12px; padding: 0; }
+.correctionCard .compactFieldGrid { padding: 13px 14px; }
+.correctionCard label { display: grid; gap: 5px; color: #52676e; font-size: 9px; font-weight: 600; }
+.correctionCard input { width: 100%; height: 36px; padding: 0 10px; border: 1px solid #dce4e4; border-radius: 6px; background: #fff; color: var(--ink); }
+
+.reportFilterBar { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.reportFilterBar > div { display: flex; align-items: flex-end; gap: 8px; }
+.reportFilterBar label { display: grid; gap: 4px; color: var(--muted); font-size: 8px; }
+.reportFilterBar input { height: 32px; padding: 0 8px; border: 1px solid #dce4e4; border-radius: 6px; color: var(--ink); font-size: 9px; }
+.reportFilterBar button { min-height: 32px; padding: 0 12px; border: 1px solid var(--teal); border-radius: 6px; background: var(--teal); color: #fff; font-size: 8.5px; font-weight: 700; }
+.reportFilterBar a { padding: 8px 4px; color: var(--teal-dark); font-size: 8.5px; font-weight: 650; text-decoration: none; }
+
+.historySection,
+.reportSection { margin-top: 14px; }
+.historySectionHeading,
+.reportSectionHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+.historySectionHeading h2,
+.reportSectionHeading h2 { margin: 1px 0 0; color: var(--ink); font-size: 15px; }
+.historySectionHeading p,
+.reportSectionHeading p { margin: 0; }
+.historySectionHeading span,
+.reportSectionHeading > span { color: var(--muted); font-size: 8px; }
+.historySectionHeading > b { display: grid; place-items: center; min-width: 28px; height: 24px; padding: 0 7px; border-radius: 5px; background: #edf6f4; color: var(--teal-dark); font-size: 10px; }
+
+.activeCycleGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.activeCycleCard { border: 1px solid var(--line); border-radius: 9px; background: #fff; overflow: hidden; }
+.activeCycleCard header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 11px 12px 9px; border-bottom: 1px solid #edf0f0; }
+.activeCycleCard header strong { display: block; color: var(--ink); font-size: 11px; }
+.activeCycleCard header span:not(.statusBadge) { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; }
+.activeCycleMetrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); }
+.activeCycleMetrics > div { padding: 10px 11px; border-right: 1px solid #edf0f0; }
+.activeCycleMetrics > div:last-child { border-right: 0; }
+.activeCycleMetrics span,
+.completedCycleRow > div > span,
+.commercialHistoryRow > div > span { display: block; color: var(--muted); font-size: 7.5px; }
+.activeCycleMetrics strong { display: block; margin-top: 3px; color: var(--ink); font-size: 12px; }
+.activeCycleCard footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 11px; background: #fafcfc; color: var(--muted); font-size: 8px; }
+.activeCycleCard footer strong { color: #40585e; }
+
+.completedCycleList,
+.commercialHistoryList { display: grid; gap: 7px; }
+.completedCycleRow,
+.commercialHistoryRow { display: grid; align-items: center; gap: 12px; min-height: 68px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.completedCycleRow { grid-template-columns: minmax(170px,1.4fr) repeat(5,minmax(95px,.7fr)); }
+.completedIdentity strong,
+.commercialHistoryRow > div:first-child strong { display: block; color: var(--ink); font-size: 10px; }
+.completedIdentity span,
+.completedIdentity small,
+.commercialHistoryRow > div:first-child span,
+.commercialHistoryRow > div:first-child small { display: block; margin-top: 2px; color: var(--muted); font-size: 7.5px; }
+.completedCycleRow > div > strong,
+.commercialHistoryRow > div > strong { display: block; margin-top: 3px; color: #304950; font-size: 9.5px; }
+.commercialHistoryRow { grid-template-columns: minmax(180px,1.4fr) repeat(5,minmax(90px,.72fr)) auto; }
+
+.reportExecutiveStrip { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin-top: 12px; }
+.reportExecutiveStrip article { padding: 13px 14px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.reportExecutiveStrip span { display: block; color: var(--muted); font-size: 8px; }
+.reportExecutiveStrip strong { display: block; margin-top: 5px; color: var(--ink); font-size: 17px; letter-spacing: -.02em; }
+.reportExecutiveStrip small { display: block; margin-top: 3px; color: #91a0a4; font-size: 7px; }
+.reportSummaryLine { display: flex; align-items: stretch; gap: 0; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+.reportSummaryLine > div { flex: 1; min-width: 0; padding: 9px 11px; border-right: 1px solid #edf0f0; }
+.reportSummaryLine > div:last-child { border-right: 0; }
+.reportSummaryLine span { display: block; color: var(--muted); font-size: 7.5px; }
+.reportSummaryLine strong { display: block; margin-top: 3px; color: #304950; font-size: 10px; }
+.reportVisualGrid { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(300px,.65fr); gap: 10px; margin-bottom: 10px; }
+.reportTrendCard { padding: 12px 13px; }
+.reportTrendCard .sectionHeaderInline { margin-bottom: 10px; }
+.reportTrendCard h3 { margin: 0; font-size: 11px; color: var(--ink); }
+.trendBarList { display: grid; gap: 9px; }
+.trendBarRow { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 10px; align-items: center; }
+.trendBarRow > strong { color: #52686e; font-size: 8px; font-weight: 650; }
+.trendBars { display: grid; gap: 5px; }
+.trendBars > div { display: grid; grid-template-columns: 52px minmax(40px,1fr) 95px; gap: 7px; align-items: center; }
+.trendBars span { color: var(--muted); font-size: 7px; }
+.trendBars .bar { display: block; height: 6px; max-width: 100%; border-radius: 99px; background: #8abec0; }
+.trendBars .bar.cost { background: #e6a46d; }
+.trendBars .bar.order { background: #669fa3; }
+.trendBars .bar.collected { background: #79b58a; }
+.trendBars b { color: #52676e; font-size: 7.5px; font-weight: 600; text-align: right; }
+.harvestColumnChart { display: flex; align-items: flex-end; gap: 8px; min-height: 155px; padding-top: 8px; }
+.harvestColumnChart > div { flex: 1; display: grid; justify-items: center; gap: 3px; min-width: 0; }
+.harvestColumnTrack { display: flex; align-items: flex-end; width: min(28px,70%); height: 105px; border-radius: 4px; background: #f0f4f4; overflow: hidden; }
+.harvestColumnTrack i { display: block; width: 100%; min-height: 2px; background: #6eaaad; }
+.harvestColumnChart strong { color: #40585e; font-size: 7.5px; }
+.harvestColumnChart span { color: var(--muted); font-size: 6.5px; text-align: center; }
+.comparisonCard { padding: 0; }
+.comparisonCard .sectionHeaderInline { padding: 11px 12px; border-bottom: 1px solid var(--line); }
+
+@media (max-width: 1080px) {
+  .managementSplit,
+  .reportVisualGrid { grid-template-columns: 1fr; }
+  .historyTwoColumn { grid-template-columns: 1fr; }
+  .activeCycleGrid { grid-template-columns: 1fr; }
+  .completedCycleRow,
+  .commercialHistoryRow { overflow-x: auto; }
+  .reportExecutiveStrip { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .reportSummaryLine { flex-wrap: wrap; }
+  .reportSummaryLine > div { min-width: 30%; border-bottom: 1px solid #edf0f0; }
+}
+@media (max-width: 760px) {
+  .reportFilterBar { align-items: stretch; flex-direction: column; }
+  .reportFilterBar > div { flex-wrap: wrap; }
+  .reportExecutiveStrip { grid-template-columns: 1fr 1fr; }
+  .activeCycleMetrics { grid-template-columns: repeat(2,1fr); }
+  .activeCycleMetrics > div:nth-child(2) { border-right: 0; }
+  .completedCycleRow { grid-template-columns: minmax(160px,1.4fr) repeat(5,100px); min-width: 720px; }
+  .commercialHistoryRow { grid-template-columns: minmax(170px,1.4fr) repeat(5,95px) 80px; min-width: 780px; }
+  .completedCycleList,
+  .commercialHistoryList { overflow-x: auto; }
+  .reportSummaryLine { display: grid; grid-template-columns: repeat(2,1fr); }
+  .reportSummaryLine > div { min-width: 0; border-right: 1px solid #edf0f0; }
+  .trendBarRow { grid-template-columns: 58px minmax(0,1fr); }
+  .trendBars > div { grid-template-columns: 45px minmax(30px,1fr) 78px; }
+}
