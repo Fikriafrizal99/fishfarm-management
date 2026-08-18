@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getActiveCycleOptions } from "@/src/application/cycles/get-active-cycle-options";
 import { getAppShellContext } from "@/src/application/navigation/get-app-shell-context";
 import { AppFrame } from "@/app/_components/app-frame";
@@ -108,18 +107,6 @@ export default async function SamplingPage({
           </form>
 
           <aside className="operationContextStack">
-            <section className="workspaceCard operationContextCard">
-              <div className="workspaceCardHeader"><div><span>ACTIVE CYCLES</span><h2>Pilih kolam</h2></div></div>
-              <div className="cycleQuickList">
-                {cycles.map((cycle) => (
-                  <Link href={`/ponds/${encodeURIComponent(cycle.pondCode)}`} key={cycle.id}>
-                    <div><strong>{cycle.pondCode}</strong><small>{cycle.species}</small></div><b>›</b>
-                  </Link>
-                ))}
-                {cycles.length === 0 ? <div className="recordEmpty">Tidak ada siklus aktif.</div> : null}
-              </div>
-            </section>
-
             <section className="workspaceCard operationContextCard">
               <div className="workspaceCardHeader"><div><span>AFTER SAVE</span><h2>KPI yang diperbarui</h2></div></div>
               <div className="contextMetricList">
