@@ -2,6 +2,7 @@ import {
   AlertSeverity,
   AlertStatus,
   CycleStatus,
+  ExpenseSourceType,
 } from "@/src/generated/prisma/client";
 import { db } from "@/src/lib/db";
 import {
@@ -33,6 +34,14 @@ export interface SamplingTrendPoint {
   averageLengthCm: number | null;
   weightGainG: number | null;
   adgGPerDay: number | null;
+}
+
+export interface PondRecentActivity {
+  id: string;
+  type: "SAMPLING" | "FEED" | "EXPENSE";
+  occurredAt: Date;
+  title: string;
+  detail: string;
 }
 
 export interface PondDetail {
@@ -71,6 +80,7 @@ export interface PondDetail {
   targetFcr: number | null;
   targetSrPct: number | null;
   targetHarvestWeightKg: number | null;
+  targetAverageWeightG: number | null;
   totalCost: number;
   currentCostPerStandingKg: number | null;
   revenueAmount: number;
@@ -80,6 +90,8 @@ export interface PondDetail {
   status: PondDetailStatus;
   samplingTrend: SamplingTrendPoint[];
   expenseBreakdown: Array<{ category: string; amount: number }>;
+  recentActivity: PondRecentActivity[];
+  latestNote: { text: string; occurredAt: Date } | null;
   alerts: Array<{
     id: string;
     severity: string;
@@ -308,12 +320,56 @@ export async function getPondDetail(
 
   const targetFcr = cycle.targetFcr === null ? null : toNumber(cycle.targetFcr);
   const targetSrPct = cycle.targetSrPct === null ? null : toNumber(cycle.targetSrPct);
+  const targetHarvestWeightKg =
+    cycle.targetHarvestWeightKg === null
+      ? null
+      : toNumber(cycle.targetHarvestWeightKg);
+  const targetAverageWeightG =
+    !isCompleted && targetHarvestWeightKg !== null && estimatedPopulation > 0
+      ? (targetHarvestWeightKg / estimatedPopulation) * 1000
+      : null;
   const hasActionAlert = cycle.alerts.some(
     (alert) => alert.severity === AlertSeverity.ACTION_REQUIRED,
   );
   const hasWarningAlert = cycle.alerts.some(
     (alert) => alert.severity === AlertSeverity.WARNING,
   );
+
+  const recentActivity: PondRecentActivity[] = [
+    ...cycle.samplingLogs.map((sample) => ({
+      id: `sampling-${sample.id}`,
+      type: "SAMPLING" as const,
+      occurredAt: sample.sampledAt,
+      title: "Sampling dilakukan",
+      detail: `${sample.sampleCount} sampel · ${numberForActivity(sample.averageWeightG ?? calculateAverageWeightG(toNumber(sample.totalSampleWeightKg), sample.sampleCount))} g`,
+    })),
+    ...cycle.feedingLogs.map((feeding) => ({
+      id: `feeding-${feeding.id}`,
+      type: "FEED" as const,
+      occurredAt: feeding.eventAt,
+      title: "Pemberian pakan",
+      detail: `${numberForActivity(toNumber(feeding.quantityKg))} kg`,
+    })),
+    ...cycle.expenses
+      .filter((expense) => expense.sourceType === ExpenseSourceType.MANUAL)
+      .map((expense) => ({
+        id: `expense-${expense.id}`,
+        type: "EXPENSE" as const,
+        occurredAt: expense.expenseDate,
+        title: "Input biaya operasional",
+        detail: `Rp ${Math.round(toNumber(expense.amount)).toLocaleString("id-ID")}`,
+      })),
+  ]
+    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+    .slice(0, 5);
+
+  const noteSample = cycle.samplingLogs
+    .slice()
+    .reverse()
+    .find((sample) => Boolean(sample.notes?.trim()));
+  const latestNote = noteSample?.notes?.trim()
+    ? { text: noteSample.notes.trim(), occurredAt: noteSample.sampledAt }
+    : null;
 
   return {
     pondId: cycle.pond.id,
@@ -350,10 +406,8 @@ export async function getPondDetail(
     fcr,
     targetFcr,
     targetSrPct,
-    targetHarvestWeightKg:
-      cycle.targetHarvestWeightKg === null
-        ? null
-        : toNumber(cycle.targetHarvestWeightKg),
+    targetHarvestWeightKg,
+    targetAverageWeightG,
     totalCost,
     currentCostPerStandingKg,
     revenueAmount,
@@ -371,6 +425,8 @@ export async function getPondDetail(
     expenseBreakdown: [...expenseMap.entries()]
       .map(([category, amount]) => ({ category, amount }))
       .sort((a, b) => b.amount - a.amount),
+    recentActivity,
+    latestNote,
     alerts: cycle.alerts.map((alert) => ({
       id: alert.id,
       severity: alert.severity,
@@ -380,4 +436,9 @@ export async function getPondDetail(
       triggeredAt: alert.triggeredAt,
     })),
   };
+}
+
+function numberForActivity(value: unknown): string {
+  const number = toNumber(value);
+  return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(number);
 }
