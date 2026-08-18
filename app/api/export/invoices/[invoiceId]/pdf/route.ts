@@ -30,6 +30,10 @@ export async function GET(
 
   const paid = invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const outstanding = Math.max(Number(invoice.totalAmount) - paid, 0);
+  const orderValue = invoice.salesOrder.items.reduce(
+    (sum, item) => sum + Number(item.quantityKg) * Number(item.unitPricePerKg),
+    0,
+  );
   const itemRows = invoice.salesOrder.items.map((item) => ({
     label: item.species.commonName,
     value: `${number1.format(Number(item.quantityKg))} kg x ${currency.format(Number(item.unitPricePerKg))}/kg = ${currency.format(Number(item.quantityKg) * Number(item.unitPricePerKg))}`,
@@ -60,11 +64,18 @@ export async function GET(
           { label: "Alamat", value: invoice.salesOrder.customer.addressText ?? "-" },
         ],
       },
-      { title: "Item Order", rows: itemRows },
+      {
+        title: "Referensi Sales Order",
+        rows: [
+          ...itemRows,
+          { label: "Nilai Sales Order", value: currency.format(orderValue) },
+          { label: "Catatan billing", value: "Daftar item di atas adalah referensi Sales Order. Subtotal invoice dapat berupa penagihan parsial." },
+        ],
+      },
       {
         title: "Nilai Tagihan",
         rows: [
-          { label: "Subtotal", value: currency.format(Number(invoice.subtotalAmount)) },
+          { label: "Subtotal invoice", value: currency.format(Number(invoice.subtotalAmount)) },
           { label: "Adjustment", value: currency.format(Number(invoice.adjustmentAmount)) },
           { label: "Total invoice", value: currency.format(Number(invoice.totalAmount)), emphasis: true },
           { label: "Sudah dibayar", value: currency.format(paid) },
