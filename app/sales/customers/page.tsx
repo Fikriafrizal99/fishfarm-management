@@ -1,20 +1,30 @@
+import Link from "next/link";
 import { getSalesCustomers } from "@/src/application/sales/get-sales-lists";
+import { getCustomerCommercialProfile } from "@/src/application/sales/get-customer-profile";
 import { SalesWorkspaceNav } from "@/app/_components/workspace-nav";
 import { submitCustomer } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+const currency = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
+const number1 = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const dateFormatter = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric" });
+
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; customerId?: string }>;
 }) {
   const params = await searchParams;
   let customers: Awaited<ReturnType<typeof getSalesCustomers>> = [];
+  let profile: Awaited<ReturnType<typeof getCustomerCommercialProfile>> = null;
   let databaseError = false;
 
   try {
-    customers = await getSalesCustomers();
+    [customers, profile] = await Promise.all([
+      getSalesCustomers(),
+      getCustomerCommercialProfile(params.customerId),
+    ]);
   } catch {
     databaseError = true;
   }
@@ -27,7 +37,7 @@ export default async function CustomersPage({
         <div>
           <p className="workspaceKicker">SALES CRM / ACCOUNTS</p>
           <h1>Customers</h1>
-          <p>Master data pembeli, contact person, alamat, dan preferensi komersial.</p>
+          <p>Master pembeli sekaligus riwayat order, harga, delivery, collection, dan piutang per account.</p>
         </div>
         <div className="workspaceHeadingStats">
           <span><b>{customers.length}</b> customer</span>
@@ -102,7 +112,10 @@ export default async function CustomersPage({
               <div className="recordEmpty">Belum ada customer.</div>
             ) : customers.map((customer) => (
               <article className="recordTableRow" key={customer.id}>
-                <div><strong>{customer.name}</strong><small>{customer.contactPerson ?? "Contact person belum diisi"}</small></div>
+                <div>
+                  <Link className="tableActionLink" href={`/sales/customers?customerId=${encodeURIComponent(customer.id)}`}><strong>{customer.name}</strong></Link>
+                  <small>{customer.contactPerson ?? "Contact person belum diisi"}</small>
+                </div>
                 <div><strong>{customer.whatsapp ?? customer.phone ?? "—"}</strong><small>{customer.email ?? "Email belum diisi"}</small></div>
                 <div><strong>{customer.customerType}</strong><small>Account komersial</small></div>
                 <div><span className={`statusBadge ${customer.active ? "good" : "warning"}`}>{customer.active ? "ACTIVE" : "INACTIVE"}</span></div>
@@ -111,6 +124,55 @@ export default async function CustomersPage({
           </div>
         </section>
       </div>
+
+      {profile ? (
+        <section className="workspaceCard customerDetailCard">
+          <div className="customerDetailHeader">
+            <div>
+              <p className="workspaceKicker">CUSTOMER PERFORMANCE</p>
+              <h2>{profile.customer.name}</h2>
+              <p>{profile.customer.customerType} · {profile.customer.contactPerson ?? "contact belum diisi"} · {profile.customer.whatsapp ?? profile.customer.phone ?? "tanpa telepon"}</p>
+            </div>
+            <Link className="tableAction" href="/sales/customers">Tutup detail</Link>
+          </div>
+
+          <div className="customerSummaryStrip">
+            <article><span>Total Order</span><strong>{profile.summary.orderCount}</strong></article>
+            <article><span>Ordered Qty</span><strong>{number1.format(profile.summary.quantityKg)} kg</strong></article>
+            <article><span>Order Value</span><strong>{currency.format(profile.summary.orderValue)}</strong></article>
+            <article><span>ASP / kg</span><strong>{profile.summary.averageSellingPricePerKg === null ? "—" : currency.format(profile.summary.averageSellingPricePerKg)}</strong></article>
+            <article><span>Delivered</span><strong>{number1.format(profile.summary.deliveredKg)} kg</strong></article>
+            <article><span>Collected</span><strong>{currency.format(profile.summary.paidAmount)}</strong></article>
+            <article><span>Piutang</span><strong>{currency.format(profile.summary.outstandingAmount)}</strong></article>
+            <article><span>Order Terakhir</span><strong>{profile.summary.lastOrderDate ? dateFormatter.format(profile.summary.lastOrderDate) : "—"}</strong></article>
+          </div>
+
+          <div className="customerHistoryGrid">
+            <section>
+              <h3>Purchase History</h3>
+              <div className="customerTimeline">
+                {profile.orders.length === 0 ? <div className="recordEmpty">Customer belum memiliki order.</div> : profile.orders.map((order) => (
+                  <article key={order.id}>
+                    <div><strong>{order.orderNumber}</strong><small>{dateFormatter.format(order.orderDate)} · {order.products}</small></div>
+                    <div><strong>{number1.format(order.quantityKg)} kg · {order.averagePricePerKg === null ? "—" : `${currency.format(order.averagePricePerKg)}/kg`}</strong><small>delivered {number1.format(order.deliveredKg)} kg</small></div>
+                    <div><b>{currency.format(order.orderValue)}</b><small>{order.status}</small></div>
+                  </article>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Collection</h3>
+              <div className="contextMetricList">
+                <div><span>Invoiced</span><strong>{currency.format(profile.summary.invoicedAmount)}</strong></div>
+                <div><span>Collected</span><strong>{currency.format(profile.summary.paidAmount)}</strong></div>
+                <div><span>Outstanding</span><strong>{currency.format(profile.summary.outstandingAmount)}</strong></div>
+                <div><span>Collection Rate</span><strong>{profile.summary.invoicedAmount > 0 ? `${number1.format((profile.summary.paidAmount / profile.summary.invoicedAmount) * 100)}%` : "—"}</strong></div>
+                <div><span>Open Opportunity</span><strong>{profile.opportunities.filter((row) => row.status === "OPEN").length}</strong></div>
+              </div>
+            </section>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
