@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getSalesDashboard } from "@/src/application/sales/get-sales-dashboard";
 import { SalesIcon } from "@/app/_components/icons";
 import { SalesWorkspaceNav } from "@/app/_components/workspace-nav";
@@ -28,7 +27,6 @@ export default async function SalesDashboardPage() {
     <div className="opsPage crmWorkspacePage salesOpsPage">
       <div className="workspaceHeadingRow">
         <div><p className="workspaceKicker">COMMERCIAL OPERATIONS</p><h1>Sales CRM</h1><p>Lead → Pipeline → Order → Fulfillment → Delivery → Invoice → Payment.</p></div>
-        <div className="quickActions"><Link className="actionButton" href="/sales/leads">+ Lead</Link><Link className="actionButton" href="/sales/pipeline">+ Opportunity</Link><Link className="actionButton primary" href="/sales/orders">+ Order</Link></div>
       </div>
 
       <SalesWorkspaceNav active="overview" />
@@ -46,14 +44,14 @@ export default async function SalesDashboardPage() {
 
       <div className="salesDashboardGrid">
         <section className="workspaceCard">
-          <div className="sectionHeaderInline"><div><p className="eyebrow dark">Acquisition</p><h2>Lead yang perlu ditindaklanjuti</h2></div><Link href="/sales/leads">Semua →</Link></div>
+          <div className="sectionHeaderInline"><div><p className="eyebrow dark">Acquisition</p><h2>Lead yang perlu ditindaklanjuti</h2></div></div>
           <div className="crmList">
             {dashboard.upcomingLeads.length === 0 ? <div className="emptyInline">Belum ada lead aktif.</div> : dashboard.upcomingLeads.map((lead) => <div className="crmRow" key={lead.id}><div><strong>{lead.title}</strong><span>{lead.expectedDemandKg === null ? "Qty belum ditentukan" : `${number1.format(lead.expectedDemandKg)} kg`}{lead.expectedPricePerKg === null ? "" : ` · ${currency.format(lead.expectedPricePerKg)}/kg`}</span></div><div className="crmRowRight"><span className="badge warning">{lead.status}</span><small>{lead.nextFollowUpAt ? dateFormatter.format(lead.nextFollowUpAt) : "No follow-up"}</small></div></div>)}
           </div>
         </section>
 
         <section className="workspaceCard">
-          <div className="sectionHeaderInline"><div><p className="eyebrow dark">Order Book</p><h2>Order aktif</h2></div><Link href="/sales/orders">Semua →</Link></div>
+          <div className="sectionHeaderInline"><div><p className="eyebrow dark">Order Book</p><h2>Order aktif</h2></div></div>
           <div className="crmList">
             {dashboard.activeOrders.length === 0 ? <div className="emptyInline">Belum ada order aktif.</div> : dashboard.activeOrders.map((order) => <div className="crmRow" key={order.id}><div><strong>{order.orderNumber} · {order.customerName}</strong><span>{number1.format(order.quantityKg)} kg · {currency.format(order.orderValue)}</span></div><div className="crmRowRight"><span className="badge warning">{order.status}</span><small>{number1.format(order.allocatedKg)} kg allocated</small></div></div>)}
           </div>
@@ -61,7 +59,7 @@ export default async function SalesDashboardPage() {
       </div>
 
       <section className="workspaceCard moduleMenuCard">
-        <div className="sectionHeaderInline"><div><p className="eyebrow dark">Fulfillment Bridge</p><h2>Harvest Inventory</h2></div><Link href="/sales/fulfillment">Buka fulfillment →</Link></div>
+        <div className="sectionHeaderInline"><div><p className="eyebrow dark">Fulfillment Bridge</p><h2>Harvest Inventory</h2></div></div>
         <p className="metricDisclaimer">Order tidak terikat langsung ke kolam. FulfillmentAllocation menghubungkan SalesOrderItem dengan HarvestLot.</p>
         <div className="crmList">
           {dashboard.inventoryLots.length === 0 ? <div className="emptyInline">Belum ada HarvestLot. Order tetap dapat dicatat dan dialokasikan setelah panen tersedia.</div> : dashboard.inventoryLots.map((lot) => <div className="crmRow" key={lot.id}><div><strong>{lot.lotCode} · {lot.species}</strong><span>{lot.pondCode} · panen {dateFormatter.format(lot.harvestedAt)}</span></div><div className="crmRowRight"><strong>{number1.format(lot.availableKg)} kg available</strong><small>{number1.format(lot.allocatedKg)} / {number1.format(lot.quantityKg)} kg allocated</small></div></div>)}
