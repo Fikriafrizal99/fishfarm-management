@@ -1,44 +1,82 @@
 import Link from "next/link";
 import { getDashboardOverview } from "@/src/application/dashboard/get-dashboard-overview";
+import { AppFrame } from "./_components/app-frame";
+import { GrowthChart } from "./_components/growth-chart";
+import {
+  AlertTriangleIcon,
+  CostIcon,
+  HarvestIcon,
+  InputIcon,
+  SamplingIcon,
+} from "./_components/icons";
 
 export const dynamic = "force-dynamic";
 
-const numberFormatter = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
-const oneDecimalFormatter = new Intl.NumberFormat("id-ID", {
+const number0 = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
+const number1 = new Intl.NumberFormat("id-ID", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const currencyFormatter = new Intl.NumberFormat("id-ID", {
+const number2 = new Intl.NumberFormat("id-ID", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const currency = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
   maximumFractionDigits: 0,
 });
-
-function formatNumber(value: number): string {
-  return numberFormatter.format(value);
-}
-
-function formatKg(value: number): string {
-  return `${oneDecimalFormatter.format(value)} kg`;
-}
+const timeFormatter = new Intl.DateTimeFormat("id-ID", {
+  timeZone: "Asia/Jakarta",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+const dateFormatter = new Intl.DateTimeFormat("id-ID", {
+  timeZone: "Asia/Jakarta",
+  day: "2-digit",
+  month: "short",
+});
+const dayKeyFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Jakarta",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 function formatPct(value: number | null): string {
-  return value === null ? "—" : `${oneDecimalFormatter.format(value)}%`;
+  return value === null ? "—" : `${number1.format(value)}%`;
 }
 
 function formatFcr(value: number | null): string {
-  return value === null
-    ? "—"
-    : new Intl.NumberFormat("id-ID", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
+  return value === null ? "—" : number2.format(value);
+}
+
+function compactCurrency(value: number): string {
+  if (value >= 1_000_000_000) return `Rp ${number1.format(value / 1_000_000_000)} M`;
+  if (value >= 1_000_000) return `Rp ${number1.format(value / 1_000_000)} jt`;
+  if (value >= 1_000) return `Rp ${number1.format(value / 1_000)} rb`;
+  return currency.format(value);
 }
 
 function statusLabel(status: "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION"): string {
   if (status === "ON_TARGET") return "ON TARGET";
   if (status === "NEEDS_ATTENTION") return "NEEDS ATTENTION";
   return "MONITOR";
+}
+
+function statusClass(status: "ON_TARGET" | "MONITOR" | "NEEDS_ATTENTION"): string {
+  if (status === "ON_TARGET") return "good";
+  if (status === "NEEDS_ATTENTION") return "danger";
+  return "warning";
+}
+
+function activityWhen(date: Date, now: Date): string {
+  const currentKey = dayKeyFormatter.format(now);
+  const activityKey = dayKeyFormatter.format(date);
+  if (activityKey === currentKey) return timeFormatter.format(date);
+  const yesterday = new Date(now.getTime() - 86_400_000);
+  if (activityKey === dayKeyFormatter.format(yesterday)) return "Kemarin";
+  return dateFormatter.format(date);
 }
 
 export default async function Home() {
@@ -53,143 +91,167 @@ export default async function Home() {
 
   if (!dashboard) {
     return (
-      <main className="shell">
-        <header className="hero">
-          <p className="eyebrow">FishFarm Management</p>
-          <h1>Dashboard belum memiliki data</h1>
+      <main className="shell formShell">
+        <section className="panel emptyState">
+          <p className="eyebrow dark">FishFarm Management</p>
+          <h1>{databaseUnavailable ? "Database belum tersambung" : "Dashboard belum memiliki data"}</h1>
           <p>
             {databaseUnavailable
-              ? "Development database belum tersambung. Setelah PostgreSQL dijalankan dan seed selesai, dashboard ini akan membaca data secara otomatis."
-              : "Database tersambung tetapi belum ada farm. Jalankan development seed untuk membuat data awal."}
-          </p>
-        </header>
-
-        <section className="panel emptyState">
-          <p className="eyebrow dark">Development</p>
-          <h2>UI sudah siap menerima data PostgreSQL</h2>
-          <p>
-            Tidak ada fallback angka dummy. Ini sengaja agar data yang terlihat di dashboard selalu dapat ditelusuri ke database.
+              ? "Jalankan PostgreSQL development database lalu refresh halaman ini."
+              : "Database tersambung tetapi belum ada farm aktif."}
           </p>
         </section>
       </main>
     );
   }
 
-  const ownerFirstName = dashboard.ownerName?.split(" ")[0] ?? "Farmer";
+  const now = new Date();
+  const alertCount = dashboard.cycles.reduce((sum, cycle) => sum + cycle.openAlertCount, 0);
+  const attentionCycle =
+    dashboard.cycles.find((cycle) => cycle.status === "NEEDS_ATTENTION") ??
+    dashboard.cycles.find((cycle) => cycle.status === "MONITOR") ??
+    null;
+
+  const chartSeries = dashboard.growthSeries
+    .filter((item) => item.points.length > 0)
+    .slice(0, 2)
+    .map((item, index) => ({
+      label: item.pondCode,
+      tone: index === 0 ? ("teal" as const) : ("orange" as const),
+      points: item.points.map((point) => ({
+        date: point.sampledAt,
+        value: point.averageWeightG,
+      })),
+    }));
 
   return (
-    <main className="shell">
-      <header className="hero">
-        <div className="heroTopline">
+    <AppFrame
+      active="dashboard"
+      ownerName={dashboard.ownerName}
+      alertCount={alertCount}
+      activePonds={dashboard.activePonds}
+    >
+      <div className="opsPage dashboardPage">
+        <div className="pageTitleRow">
           <div>
-            <p className="eyebrow">FishFarm Management</p>
-            <h1>Halo, {ownerFirstName} 👋</h1>
+            <h1>Dashboard Farm</h1>
+            <p>Ringkasan operasional hari ini</p>
           </div>
-          <div className="heroActions">
-            <Link className="secondaryButton lightButton" href="/sales">Sales CRM</Link>
-            <Link className="secondaryButton lightButton" href="/sampling">+ Sampling</Link>
-            <Link className="heroAction" href="/input">+ Input Harian</Link>
+          <div className="quickActions" aria-label="Aksi cepat">
+            <Link className="actionButton primaryOutline" href="/input"><InputIcon size={15} />Input Harian</Link>
+            <Link className="actionButton" href="/sampling"><SamplingIcon size={15} />Sampling</Link>
+            <Link className="actionButton" href="/harvest"><HarvestIcon size={15} />Panen</Link>
+            <Link className="actionButton" href="/input"><CostIcon size={15} />Biaya</Link>
           </div>
         </div>
-        <p>{dashboard.farmName} · data langsung dari PostgreSQL</p>
-      </header>
 
-      <section className="metrics" aria-label="Ringkasan farm">
-        <article>
-          <span>Kolam Aktif</span>
-          <strong>{formatNumber(dashboard.activePonds)}</strong>
-        </article>
-        <article>
-          <span>Estimasi Ikan Aktif</span>
-          <strong>{formatNumber(dashboard.activeFish)}</strong>
-        </article>
-        <article>
-          <span>Estimasi Biomassa</span>
-          <strong>{formatKg(dashboard.estimatedBiomassKg)}</strong>
-        </article>
-        <article>
-          <span>Biaya Berjalan</span>
-          <strong>{currencyFormatter.format(dashboard.runningCost)}</strong>
-        </article>
-      </section>
+        <section className="summaryStrip" aria-label="Ringkasan farm">
+          <article>
+            <span className="summaryIcon blue"><InputIcon size={16} /></span>
+            <div><span>Kolam Aktif</span><strong>{number0.format(dashboard.activePonds)}</strong><small>kolam</small></div>
+          </article>
+          <article>
+            <span className="summaryIcon cyan"><SamplingIcon size={16} /></span>
+            <div><span>Ikan Aktif</span><strong>{number0.format(dashboard.activeFish)}</strong><small>ekor</small></div>
+          </article>
+          <article>
+            <span className="summaryIcon green"><HarvestIcon size={16} /></span>
+            <div><span>Biomassa</span><strong>{number1.format(dashboard.estimatedBiomassKg)}</strong><small>kg</small></div>
+          </article>
+          <article>
+            <span className="summaryIcon teal"><CostIcon size={16} /></span>
+            <div><span>Biaya Berjalan</span><strong>{compactCurrency(dashboard.runningCost)}</strong></div>
+          </article>
+        </section>
 
-      <section className="panel">
-        <div className="panelTitle">
-          <div>
-            <p className="eyebrow dark">KPI Farm</p>
-            <h2>Ringkasan performa aktif</h2>
+        <section className={`attentionStrip ${attentionCycle ? "hasAttention" : "allClear"}`} id="attention">
+          <div className="attentionLead">
+            <span className="attentionIcon"><AlertTriangleIcon size={17} /></span>
+            <div>
+              <strong>{attentionCycle ? "Perlu Perhatian" : "Kondisi Farm Baik"}</strong>
+              <small>{attentionCycle ? "Kinerja di bawah target" : "Tidak ada alert aktif"}</small>
+              <Link href={attentionCycle ? `/ponds/${encodeURIComponent(attentionCycle.pondCode)}` : "/"}>
+                {attentionCycle ? `${attentionCycle.pondCode} — ${attentionCycle.species}` : dashboard.farmName}
+              </Link>
+            </div>
           </div>
-          <span className="badge good">LIVE DATA</span>
+          {attentionCycle ? (
+            <div className="attentionMetrics">
+              <div><span>SR Saat Ini</span><strong>{formatPct(attentionCycle.survivalRatePct)}</strong></div>
+              <div><span>Target SR</span><strong>{formatPct(attentionCycle.targetSrPct)}</strong></div>
+              <div><span>Status</span><b className={`statusBadge ${statusClass(attentionCycle.status)}`}>{statusLabel(attentionCycle.status)}</b></div>
+              <Link className="attentionArrow" href={`/ponds/${encodeURIComponent(attentionCycle.pondCode)}`} aria-label={`Lihat ${attentionCycle.pondCode}`}>›</Link>
+            </div>
+          ) : null}
+        </section>
+
+        <section className="workspaceSection">
+          <h2>Cycle Overview</h2>
+          <div className="dataTableWrap">
+            <table className="dataTable">
+              <thead>
+                <tr>
+                  <th>Kolam</th>
+                  <th>Jenis Ikan</th>
+                  <th>Hari</th>
+                  <th>SR</th>
+                  <th>FCR</th>
+                  <th>ABW</th>
+                  <th>Biomassa</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dashboard.cycles.map((cycle) => (
+                  <tr key={cycle.cycleId}>
+                    <td><Link className={cycle.status === "ON_TARGET" ? "tablePondLink" : "tablePondLink warningText"} href={`/ponds/${encodeURIComponent(cycle.pondCode)}`}>{cycle.pondCode}</Link></td>
+                    <td>{cycle.species}</td>
+                    <td>{cycle.day}</td>
+                    <td className={cycle.survivalRatePct !== null && cycle.targetSrPct !== null && cycle.survivalRatePct < cycle.targetSrPct ? "warningText strongCell" : "goodText strongCell"}>{formatPct(cycle.survivalRatePct)}</td>
+                    <td>{formatFcr(cycle.fcr)}</td>
+                    <td>{cycle.averageWeightG === null ? "—" : `${number0.format(cycle.averageWeightG)} g`}</td>
+                    <td>{cycle.estimatedBiomassKg === null ? "—" : `${number1.format(cycle.estimatedBiomassKg)} kg`}</td>
+                    <td><span className={`statusBadge ${statusClass(cycle.status)}`}>{statusLabel(cycle.status)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div className="dashboardLowerGrid">
+          <section className="workspaceCard chartCard">
+            <h2>Trend Pertumbuhan (ABW)</h2>
+            <GrowthChart series={chartSeries} height={265} />
+          </section>
+
+          <section className="workspaceCard activityCard">
+            <h2>Aktivitas Hari Ini</h2>
+            <div className="activityList">
+              {dashboard.recentActivity.slice(0, 3).map((activity) => (
+                <article className="activityRow" key={activity.id}>
+                  <span className={`activityIcon ${activity.type.toLowerCase()}`}>
+                    {activity.type === "SAMPLING" ? <SamplingIcon size={15} /> : activity.type === "FEED" ? <HarvestIcon size={15} /> : <CostIcon size={15} />}
+                  </span>
+                  <div>
+                    <strong>{activity.type === "SAMPLING" ? `Sampling ${activity.pondCode}` : activity.type === "FEED" ? "Pemberian pakan" : "Input biaya operasional"}</strong>
+                    <span>
+                      {activity.type === "SAMPLING"
+                        ? `${number0.format(activity.sampleCount ?? 0)} sampel · ${number0.format(activity.averageWeightG ?? 0)} g`
+                        : activity.type === "FEED"
+                          ? `${activity.pondCode} · ${number1.format(activity.quantityKg ?? 0)} kg`
+                          : currency.format(activity.amount ?? 0)}
+                    </span>
+                  </div>
+                  <time>{activityWhen(activity.occurredAt, now)}</time>
+                </article>
+              ))}
+              {dashboard.recentActivity.length === 0 ? <p className="mutedEmpty">Belum ada aktivitas terbaru.</p> : null}
+            </div>
+            <Link className="cardFooterLink" href="/input">Lihat semua aktivitas →</Link>
+          </section>
         </div>
-        <div className="kpis">
-          <div>
-            <span>Estimated SR</span>
-            <strong>{formatPct(dashboard.survivalRatePct)}</strong>
-          </div>
-          <div>
-            <span>Mortalitas</span>
-            <strong>{formatPct(dashboard.mortalityRatePct)}</strong>
-          </div>
-          <div>
-            <span>FCR Farm</span>
-            <strong>{formatFcr(dashboard.fcr)}</strong>
-          </div>
-          <div>
-            <span>Siklus Aktif</span>
-            <strong>{formatNumber(dashboard.cycles.length)}</strong>
-          </div>
-        </div>
-        <p className="metricDisclaimer">
-          SR, biomassa, dan FCR pada siklus aktif adalah metrik terhitung/estimasi dari raw logs; bukan hasil final panen.
-        </p>
-      </section>
-
-      <section className="panel">
-        <div className="panelTitle">
-          <div>
-            <p className="eyebrow dark">Status Kolam</p>
-            <h2>Cycle overview</h2>
-          </div>
-          <Link className="textLink" href="/input">Catat data →</Link>
-        </div>
-
-        <div className="pondList">
-          {dashboard.cycles.map((cycle) => (
-            <article className="pondRow" key={cycle.cycleId}>
-              <div className="pondMain">
-                <Link className="pondLink" href={`/ponds/${encodeURIComponent(cycle.pondCode)}`}>
-                  {cycle.pondCode} — {cycle.species}
-                </Link>
-                <span>
-                  Hari ke-{cycle.day} · SR {formatPct(cycle.survivalRatePct)} · FCR {formatFcr(cycle.fcr)}
-                </span>
-                <span>
-                  ABW {cycle.averageWeightG === null ? "—" : `${formatNumber(cycle.averageWeightG)} g`} · Biomassa {cycle.estimatedBiomassKg === null ? "—" : formatKg(cycle.estimatedBiomassKg)}
-                </span>
-                <span>
-                  Biaya/kg biomassa {cycle.currentCostPerStandingKg === null ? "—" : currencyFormatter.format(cycle.currentCostPerStandingKg)}
-                  {cycle.openAlertCount > 0 ? ` · ${cycle.openAlertCount} alert terbuka` : ""}
-                </span>
-              </div>
-              <span
-                className={`badge ${
-                  cycle.status === "ON_TARGET"
-                    ? "good"
-                    : cycle.status === "NEEDS_ATTENTION"
-                      ? "danger"
-                      : "warning"
-                }`}
-              >
-                {statusLabel(cycle.status)}
-              </span>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <footer>
-        V0.8 · Dashboard Budidaya dan Sales CRM memakai domain terpisah dalam satu aplikasi.
-      </footer>
-    </main>
+      </div>
+    </AppFrame>
   );
 }
