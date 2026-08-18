@@ -24,6 +24,7 @@ const ids = {
   customerWholesaler: "10000000-0000-4000-8000-000000000002",
   leadHotel: "10000000-0000-4000-8000-000000000101",
   opportunityRestaurant: "10000000-0000-4000-8000-000000000201",
+  opportunityWholesaler: "10000000-0000-4000-8000-000000000202",
   interactionLead: "10000000-0000-4000-8000-000000000301",
   salesOrder: "10000000-0000-4000-8000-000000000401",
   salesOrderItem: "10000000-0000-4000-8000-000000000402",
@@ -54,7 +55,7 @@ async function main() {
     },
   });
 
-  await prisma.customer.upsert({
+  const wholesaler = await prisma.customer.upsert({
     where: { id: ids.customerWholesaler },
     update: {
       name: "Pengepul Nila Cianjur",
@@ -116,7 +117,7 @@ async function main() {
   const opportunity = await prisma.salesOpportunity.upsert({
     where: { id: ids.opportunityRestaurant },
     update: {
-      status: OpportunityStatus.OPEN,
+      status: OpportunityStatus.WON,
       expectedQtyKg: 100,
       expectedPricePerKg: 23500,
     },
@@ -126,11 +127,32 @@ async function main() {
       customerId: restaurant.id,
       speciesId: ids.speciesNila,
       title: "Repeat order Nila RM Sederhana",
-      status: OpportunityStatus.OPEN,
+      status: OpportunityStatus.WON,
       expectedQtyKg: 100,
       expectedPricePerKg: 23500,
       expectedCloseDate: new Date("2026-08-25T00:00:00.000Z"),
-      notes: "Qualified demand independent from a specific harvest lot.",
+      notes: "Converted development opportunity linked to SO-DEV-001.",
+    },
+  });
+
+  await prisma.salesOpportunity.upsert({
+    where: { id: ids.opportunityWholesaler },
+    update: {
+      status: OpportunityStatus.OPEN,
+      expectedQtyKg: 250,
+      expectedPricePerKg: 22800,
+    },
+    create: {
+      id: ids.opportunityWholesaler,
+      farmId: ids.farm,
+      customerId: wholesaler.id,
+      speciesId: ids.speciesNila,
+      title: "Pasokan Nila — Pengepul Cianjur",
+      status: OpportunityStatus.OPEN,
+      expectedQtyKg: 250,
+      expectedPricePerKg: 22800,
+      expectedCloseDate: new Date("2026-08-28T00:00:00.000Z"),
+      notes: "Open development opportunity for Pipeline → Order validation.",
     },
   });
 
@@ -227,6 +249,7 @@ async function main() {
   console.log({
     customers: 2,
     openLead: "Hotel Cianjur — kebutuhan Nila mingguan",
+    openOpportunity: "Pasokan Nila — Pengepul Cianjur",
     order: order.orderNumber,
     orderKg: 100,
     invoice: invoice.invoiceNumber,
