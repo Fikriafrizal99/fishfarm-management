@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getDashboardOverview } from "@/src/application/dashboard/get-dashboard-overview";
 import { AppFrame } from "@/app/_components/app-frame";
+import { BudidayaWorkspaceNav } from "@/app/_components/workspace-nav";
 import { CostIcon, HarvestIcon, InputIcon, SamplingIcon } from "@/app/_components/icons";
 
 export const dynamic = "force-dynamic";
@@ -62,11 +63,12 @@ export default async function BudidayaPage() {
       alertCount={alertCount}
       activePonds={dashboard.activePonds}
     >
-      <div className="opsPage">
-        <div className="pageTitleRow">
+      <div className="opsPage operationWorkspacePage">
+        <div className="workspaceHeadingRow">
           <div>
+            <p className="workspaceKicker">PRODUCTION OPERATIONS</p>
             <h1>Budidaya</h1>
-            <p>Kolam, siklus aktif, dan pencatatan operasional</p>
+            <p>Kolam, siklus aktif, performa biologis, dan pencatatan operasional.</p>
           </div>
           <div className="quickActions">
             <Link className="actionButton primary" href="/input"><InputIcon size={15} />Input Harian</Link>
@@ -75,6 +77,8 @@ export default async function BudidayaPage() {
             <Link className="actionButton" href="/expenses"><CostIcon size={15} />Biaya</Link>
           </div>
         </div>
+
+        <BudidayaWorkspaceNav active="overview" />
 
         <section className="summaryStrip" aria-label="Ringkasan budidaya">
           <article><span className="summaryIcon blue"><InputIcon size={16} /></span><div><span>Kolam Aktif</span><strong>{number0.format(dashboard.activePonds)}</strong><small>kolam</small></div></article>
@@ -107,12 +111,12 @@ export default async function BudidayaPage() {
         </section>
 
         <section className="workspaceCard moduleMenuCard">
-          <h2>Pencatatan Operasional</h2>
+          <h2>Quick Actions</h2>
           <div className="moduleLinkGrid">
-            <Link href="/input"><InputIcon size={18} /><div><strong>Input Harian</strong><span>Pakan, mortalitas, dan catatan kondisi.</span></div><b>→</b></Link>
+            <Link href="/input"><InputIcon size={18} /><div><strong>Input Harian</strong><span>Pakan, mortalitas, dan kondisi lapangan.</span></div><b>→</b></Link>
             <Link href="/sampling"><SamplingIcon size={18} /><div><strong>Sampling</strong><span>ABW, panjang, populasi teramati.</span></div><b>→</b></Link>
-            <Link href="/harvest"><HarvestIcon size={18} /><div><strong>Panen</strong><span>Panen parsial atau final dan HarvestLot.</span></div><b>→</b></Link>
-            <Link href="/expenses"><CostIcon size={18} /><div><strong>Biaya</strong><span>Biaya operasional tambahan per siklus.</span></div><b>→</b></Link>
+            <Link href="/harvest"><HarvestIcon size={18} /><div><strong>Panen</strong><span>Panen parsial/final dan HarvestLot.</span></div><b>→</b></Link>
+            <Link href="/expenses"><CostIcon size={18} /><div><strong>Biaya</strong><span>Raw cost tambahan per siklus.</span></div><b>→</b></Link>
           </div>
         </section>
       </div>
