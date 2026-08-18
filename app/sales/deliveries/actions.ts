@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { DeliveryStatus } from "@/src/generated/prisma/client";
-import {
-  recordDelivery,
-  setDeliveryStatus,
-} from "@/src/application/sales/record-delivery";
+import { recordDelivery, setDeliveryStatus } from "@/src/application/sales/record-delivery";
 
 function requiredPositiveNumber(formData: FormData, key: string, label: string): number {
   const raw = String(formData.get(key) ?? "").trim();
@@ -25,9 +22,7 @@ export async function submitDelivery(formData: FormData): Promise<void> {
       statusRaw !== DeliveryStatus.PLANNED &&
       statusRaw !== DeliveryStatus.DISPATCHED &&
       statusRaw !== DeliveryStatus.DELIVERED
-    ) {
-      throw new Error("Status delivery tidak valid");
-    }
+    ) throw new Error("Status delivery tidak valid");
 
     await recordDelivery({
       orderItemId,
@@ -41,13 +36,12 @@ export async function submitDelivery(formData: FormData): Promise<void> {
     revalidatePath("/sales");
     revalidatePath("/sales/orders");
     revalidatePath("/sales/fulfillment");
-    revalidatePath("/sales/deliveries");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal menyimpan delivery";
-    redirect(`/sales/deliveries?error=${encodeURIComponent(message)}`);
+    redirect(`/sales/fulfillment?error=${encodeURIComponent(message)}#delivery`);
   }
 
-  redirect("/sales/deliveries?saved=1");
+  redirect("/sales/fulfillment?deliverySaved=1#delivery");
 }
 
 export async function submitDeliveryStatus(formData: FormData): Promise<void> {
@@ -55,18 +49,15 @@ export async function submitDeliveryStatus(formData: FormData): Promise<void> {
     const deliveryId = String(formData.get("deliveryId") ?? "").trim();
     const statusRaw = String(formData.get("status") ?? "").trim();
     if (!deliveryId) throw new Error("Delivery tidak ditemukan");
-    if (!Object.values(DeliveryStatus).includes(statusRaw as DeliveryStatus)) {
-      throw new Error("Status delivery tidak valid");
-    }
+    if (!Object.values(DeliveryStatus).includes(statusRaw as DeliveryStatus)) throw new Error("Status delivery tidak valid");
     await setDeliveryStatus(deliveryId, statusRaw as DeliveryStatus);
     revalidatePath("/sales");
     revalidatePath("/sales/orders");
     revalidatePath("/sales/fulfillment");
-    revalidatePath("/sales/deliveries");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal mengubah status delivery";
-    redirect(`/sales/deliveries?error=${encodeURIComponent(message)}`);
+    redirect(`/sales/fulfillment?error=${encodeURIComponent(message)}#delivery`);
   }
 
-  redirect("/sales/deliveries");
+  redirect("/sales/fulfillment#delivery");
 }
