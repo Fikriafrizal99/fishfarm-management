@@ -181,7 +181,7 @@ export default async function Home() {
             <Link className="actionButton primaryOutline" href="/input"><InputIcon size={15} />Input Harian</Link>
             <Link className="actionButton" href="/sampling"><SamplingIcon size={15} />Sampling</Link>
             <Link className="actionButton" href="/harvest"><HarvestIcon size={15} />Panen</Link>
-            <Link className="actionButton" href="/input"><CostIcon size={15} />Biaya</Link>
+            <Link className="actionButton" href="/expenses"><CostIcon size={15} />Biaya</Link>
           </div>
         </div>
 
