@@ -1,143 +1,79 @@
-import {
-  DeliveryStatus,
-  InvoiceStatus,
-  OpportunityStatus,
-  SalesOrderStatus,
-} from "@/src/generated/prisma/client";
+import { DeliveryStatus, InvoiceStatus, OpportunityStatus, SalesOrderStatus } from "@/src/generated/prisma/client";
 import { db } from "@/src/lib/db";
+import { getDashboardOverview } from "@/src/application/dashboard/get-dashboard-overview";
+import type { ReportingRange } from "./get-history-overview";
 
-function toNumber(value: unknown): number {
-  return value === null || value === undefined ? 0 : Number(value);
-}
+function toNumber(value: unknown): number { return value === null || value === undefined ? 0 : Number(value); }
+const monthFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit" });
 
-export interface ReportOverview {
-  farmName: string;
-  production: {
-    totalCycles: number;
-    completedCycles: number;
-    harvestedKg: number;
-    revenue: number;
-    cost: number;
-    profit: number;
-  };
-  commercial: {
-    customers: number;
-    openOpportunities: number;
-    pipelineValue: number;
-    orders: number;
-    orderKg: number;
-    orderValue: number;
-    deliveredKg: number;
-    invoicedAmount: number;
-    collectedAmount: number;
-    outstandingAmount: number;
-  };
-  topCustomers: Array<{
-    customerName: string;
-    orderCount: number;
-    quantityKg: number;
-    orderValue: number;
-    collectedAmount: number;
-  }>;
-}
-
-export async function getReportOverview(): Promise<ReportOverview | null> {
+export async function getReportOverview(range: ReportingRange = {}) {
   const farm = await db.farm.findFirst({ orderBy: { createdAt: "asc" } });
   if (!farm) return null;
+  const dateFilter = range.from || range.to ? { ...(range.from ? { gte: range.from } : {}), ...(range.to ? { lte: range.to } : {}) } : undefined;
 
-  const [cycles, opportunities, orders, customerCount] = await Promise.all([
-    db.productionCycle.findMany({
-      where: { farmId: farm.id },
-      include: { harvests: true, expenses: true },
-    }),
-    db.salesOpportunity.findMany({
-      where: { farmId: farm.id, status: OpportunityStatus.OPEN },
-    }),
-    db.salesOrder.findMany({
-      where: { farmId: farm.id, status: { not: SalesOrderStatus.CANCELLED } },
-      include: {
-        customer: true,
-        items: true,
-        deliveries: { include: { items: true } },
-        invoices: { include: { payments: true } },
-      },
-    }),
+  const [dashboard, completedCycles, expenses, harvests, opportunities, orders, deliveries, invoices, payments, receivableInvoices, customerCount] = await Promise.all([
+    getDashboardOverview(),
+    db.productionCycle.findMany({ where: { farmId: farm.id, status: "COMPLETED", ...(dateFilter ? { completedAt: dateFilter } : {}) }, select: { id: true } }),
+    db.expense.findMany({ where: { farmId: farm.id, ...(dateFilter ? { expenseDate: dateFilter } : {}) }, select: { expenseDate: true, amount: true } }),
+    db.harvest.findMany({ where: { cycle: { farmId: farm.id }, ...(dateFilter ? { harvestedAt: dateFilter } : {}) }, select: { harvestedAt: true, weightKg: true, revenueAmount: true } }),
+    db.salesOpportunity.findMany({ where: { farmId: farm.id, status: OpportunityStatus.OPEN } }),
+    db.salesOrder.findMany({ where: { farmId: farm.id, status: { not: SalesOrderStatus.CANCELLED }, ...(dateFilter ? { orderDate: dateFilter } : {}) }, include: { customer: true, items: true } }),
+    db.delivery.findMany({ where: { farmId: farm.id, status: DeliveryStatus.DELIVERED, ...(dateFilter ? { deliveredAt: dateFilter } : {}) }, include: { items: true } }),
+    db.invoice.findMany({ where: { farmId: farm.id, status: { not: InvoiceStatus.VOID }, ...(dateFilter ? { issueDate: dateFilter } : {}) } }),
+    db.payment.findMany({ where: { invoice: { farmId: farm.id }, ...(dateFilter ? { paidAt: dateFilter } : {}) }, include: { invoice: { include: { salesOrder: { include: { customer: true } } } } } }),
+    db.invoice.findMany({ where: { farmId: farm.id, status: { in: [InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID] } }, include: { payments: true } }),
     db.customer.count({ where: { farmId: farm.id, active: true } }),
   ]);
 
-  const harvestedKg = cycles.reduce(
-    (sum, cycle) => sum + cycle.harvests.reduce((inner, row) => inner + toNumber(row.weightKg), 0),
-    0,
-  );
-  const productionRevenue = cycles.reduce(
-    (sum, cycle) => sum + cycle.harvests.reduce((inner, row) => inner + toNumber(row.revenueAmount), 0),
-    0,
-  );
-  const productionCost = cycles.reduce(
-    (sum, cycle) => sum + cycle.expenses.reduce((inner, row) => inner + toNumber(row.amount), 0),
-    0,
-  );
+  const productionCost = expenses.reduce((sum, row) => sum + toNumber(row.amount), 0);
+  const harvestedKg = harvests.reduce((sum, row) => sum + toNumber(row.weightKg), 0);
+  const productionRevenue = harvests.reduce((sum, row) => sum + toNumber(row.revenueAmount), 0);
+  const productionProfit = productionRevenue - productionCost;
 
-  const pipelineValue = opportunities.reduce((sum, opportunity) => {
-    if (opportunity.expectedQtyKg === null || opportunity.expectedPricePerKg === null) return sum;
-    return sum + toNumber(opportunity.expectedQtyKg) * toNumber(opportunity.expectedPricePerKg);
+  const pipelineValue = opportunities.reduce((sum, row) => sum + toNumber(row.expectedQtyKg) * toNumber(row.expectedPricePerKg), 0);
+  const orderKg = orders.reduce((sum, order) => sum + order.items.reduce((inner, item) => inner + toNumber(item.quantityKg), 0), 0);
+  const orderValue = orders.reduce((sum, order) => sum + order.items.reduce((inner, item) => inner + toNumber(item.quantityKg) * toNumber(item.unitPricePerKg), 0), 0);
+  const deliveredKg = deliveries.reduce((sum, delivery) => sum + delivery.items.reduce((inner, item) => inner + toNumber(item.quantityKg), 0), 0);
+  const invoicedAmount = invoices.reduce((sum, invoice) => sum + toNumber(invoice.totalAmount), 0);
+  const collectedAmount = payments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
+  const outstandingAmount = receivableInvoices.reduce((sum, invoice) => {
+    const paid = invoice.payments.reduce((inner, payment) => inner + toNumber(payment.amount), 0);
+    return sum + Math.max(toNumber(invoice.totalAmount) - paid, 0);
   }, 0);
 
-  let orderKg = 0;
-  let orderValue = 0;
-  let deliveredKg = 0;
-  let invoicedAmount = 0;
-  let collectedAmount = 0;
-  const customerMap = new Map<string, ReportOverview["topCustomers"][number]>();
-
+  const customerMap = new Map<string, { customerName: string; orderCount: number; quantityKg: number; orderValue: number; collectedAmount: number }>();
   for (const order of orders) {
-    const quantity = order.items.reduce((sum, row) => sum + toNumber(row.quantityKg), 0);
-    const value = order.items.reduce(
-      (sum, row) => sum + toNumber(row.quantityKg) * toNumber(row.unitPricePerKg),
-      0,
-    );
-    const delivered = order.deliveries
-      .filter((delivery) => delivery.status === DeliveryStatus.DELIVERED)
-      .reduce(
-        (sum, delivery) => sum + delivery.items.reduce((inner, row) => inner + toNumber(row.quantityKg), 0),
-        0,
-      );
-    const activeInvoices = order.invoices.filter((invoice) => invoice.status !== InvoiceStatus.VOID);
-    const invoiced = activeInvoices.reduce((sum, invoice) => sum + toNumber(invoice.totalAmount), 0);
-    const collected = activeInvoices.reduce(
-      (sum, invoice) => sum + invoice.payments.reduce((inner, payment) => inner + toNumber(payment.amount), 0),
-      0,
-    );
-
-    orderKg += quantity;
-    orderValue += value;
-    deliveredKg += delivered;
-    invoicedAmount += invoiced;
-    collectedAmount += collected;
-
-    const current = customerMap.get(order.customerId) ?? {
-      customerName: order.customer.name,
-      orderCount: 0,
-      quantityKg: 0,
-      orderValue: 0,
-      collectedAmount: 0,
-    };
-    current.orderCount += 1;
-    current.quantityKg += quantity;
-    current.orderValue += value;
-    current.collectedAmount += collected;
-    customerMap.set(order.customerId, current);
+    const row = customerMap.get(order.customerId) ?? { customerName: order.customer.name, orderCount: 0, quantityKg: 0, orderValue: 0, collectedAmount: 0 };
+    row.orderCount += 1;
+    row.quantityKg += order.items.reduce((sum, item) => sum + toNumber(item.quantityKg), 0);
+    row.orderValue += order.items.reduce((sum, item) => sum + toNumber(item.quantityKg) * toNumber(item.unitPricePerKg), 0);
+    customerMap.set(order.customerId, row);
   }
+  for (const payment of payments) {
+    const customerId = payment.invoice.salesOrder.customerId;
+    const row = customerMap.get(customerId) ?? { customerName: payment.invoice.salesOrder.customer.name, orderCount: 0, quantityKg: 0, orderValue: 0, collectedAmount: 0 };
+    row.collectedAmount += toNumber(payment.amount);
+    customerMap.set(customerId, row);
+  }
+
+  type TrendRow = { key: string; cost: number; harvestKg: number; revenue: number; orderValue: number; collected: number };
+  const trendMap = new Map<string, TrendRow>();
+  const bucket = (date: Date) => { const key = monthFormatter.format(date); const current = trendMap.get(key) ?? { key, cost: 0, harvestKg: 0, revenue: 0, orderValue: 0, collected: 0 }; trendMap.set(key, current); return current; };
+  expenses.forEach((row) => { bucket(row.expenseDate).cost += toNumber(row.amount); });
+  harvests.forEach((row) => { const item = bucket(row.harvestedAt); item.harvestKg += toNumber(row.weightKg); item.revenue += toNumber(row.revenueAmount); });
+  orders.forEach((order) => { bucket(order.orderDate).orderValue += order.items.reduce((sum, item) => sum + toNumber(item.quantityKg) * toNumber(item.unitPricePerKg), 0); });
+  payments.forEach((payment) => { bucket(payment.paidAt).collected += toNumber(payment.amount); });
 
   return {
     farmName: farm.name,
     production: {
-      totalCycles: cycles.length,
-      completedCycles: cycles.filter((cycle) => cycle.status === "COMPLETED").length,
+      activeCycles: dashboard?.activePonds ?? 0,
+      completedCycles: completedCycles.length,
       harvestedKg,
       revenue: productionRevenue,
       cost: productionCost,
-      profit: productionRevenue - productionCost,
+      profit: productionProfit,
+      marginPct: productionRevenue > 0 ? (productionProfit / productionRevenue) * 100 : null,
     },
     commercial: {
       customers: customerCount,
@@ -149,10 +85,15 @@ export async function getReportOverview(): Promise<ReportOverview | null> {
       deliveredKg,
       invoicedAmount,
       collectedAmount,
-      outstandingAmount: Math.max(invoicedAmount - collectedAmount, 0),
+      outstandingAmount,
+      collectionRatePct: invoicedAmount > 0 ? (collectedAmount / invoicedAmount) * 100 : null,
     },
-    topCustomers: [...customerMap.values()]
-      .sort((a, b) => b.orderValue - a.orderValue)
-      .slice(0, 8),
+    cycleComparison: (dashboard?.cycles ?? []).map((cycle) => ({
+      cycleId: cycle.cycleId, pondCode: cycle.pondCode, species: cycle.species, status: cycle.status,
+      survivalRatePct: cycle.survivalRatePct, targetSrPct: cycle.targetSrPct, fcr: cycle.fcr, targetFcr: cycle.targetFcr,
+      averageWeightG: cycle.averageWeightG, estimatedBiomassKg: cycle.estimatedBiomassKg, runningCost: cycle.runningCost,
+    })),
+    trend: [...trendMap.values()].sort((a, b) => a.key.localeCompare(b.key)),
+    topCustomers: [...customerMap.values()].sort((a, b) => b.orderValue - a.orderValue).slice(0, 10),
   };
 }
