@@ -6,7 +6,7 @@ Version: **0.9**
 
 The V0.8 production/database foundation has passed local bootstrap, seed, Decision Engine, TypeScript, production build, DB health, and UI sanity checks.
 
-V0.9 completes the first end-to-end Sales CRM transaction flow in code and is now awaiting local runtime validation.
+V0.9 completes the first end-to-end Sales CRM transaction flow in code and is awaiting local runtime validation. A read-only History & Reporting baseline is also implemented without changing the database schema.
 
 ## Phase 0 — Product & Architecture Foundation
 
@@ -36,8 +36,10 @@ Status: **VALIDATED BASELINE**
 - [x] PostgreSQL constraints
 - [x] database bootstrap
 - [x] PWA manifest baseline
-- [ ] authentication
+- [ ] authentication — **deferred while the product is single-user/personal**
 - [ ] production deployment
+
+The schema already keeps `User`, `FarmMembership`, and `FarmRole` so authentication/authorization can be added later without redesigning the core domain.
 
 ## Phase 2 — Production Core
 
@@ -180,7 +182,7 @@ Next after V0.9 runtime validation:
 - [ ] multi-item Sales Order UI
 - [ ] order cancellation workflow
 - [ ] receivable aging / overdue flags
-- [ ] customer purchase history
+- [ ] customer purchase history detail
 - [ ] customer price history
 - [ ] repeat-order metrics
 - [ ] delivery proof / attachments
@@ -188,19 +190,32 @@ Next after V0.9 runtime validation:
 
 ## Phase 7 — Production & Commercial History
 
-Production:
+Status: **READ-ONLY BASELINE IMPLEMENTED / EXPANSION PENDING**
+
+Shared history/reporting:
+
+- [x] unified production + commercial history `/history`
+- [x] production + commercial business summary `/reports`
+- [x] cycle harvest / cost / revenue / profit history
+- [x] order / delivered / invoiced / paid / outstanding history
+- [x] basic sales by customer
+- [x] customer ordered kg/value
+- [x] basic collection / receivable performance
+
+Production next:
 
 - [ ] completed-cycle comparison
 - [ ] FCR/SR/HPP/profit benchmarking
 - [ ] cost composition history
+- [ ] period filters
 
-Commercial:
+Commercial next:
 
-- [ ] sales by customer
-- [ ] kg sold by customer
-- [ ] average selling price
+- [ ] average selling price history
 - [ ] customer margin contribution
-- [ ] receivable performance
+- [ ] repeat-order rate
+- [ ] receivable aging buckets
+- [ ] CSV/PDF export
 
 ## V1.0 Release Definition
 
