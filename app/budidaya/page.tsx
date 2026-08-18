@@ -70,12 +70,6 @@ export default async function BudidayaPage() {
             <h1>Budidaya</h1>
             <p>Kolam, siklus aktif, performa biologis, dan pencatatan operasional.</p>
           </div>
-          <div className="quickActions">
-            <Link className="actionButton primary" href="/input"><InputIcon size={15} />Input Harian</Link>
-            <Link className="actionButton" href="/sampling"><SamplingIcon size={15} />Sampling</Link>
-            <Link className="actionButton" href="/harvest"><HarvestIcon size={15} />Panen</Link>
-            <Link className="actionButton" href="/expenses"><CostIcon size={15} />Biaya</Link>
-          </div>
         </div>
 
         <BudidayaWorkspaceNav active="overview" />
@@ -107,16 +101,6 @@ export default async function BudidayaPage() {
                 </div>
               </Link>
             ))}
-          </div>
-        </section>
-
-        <section className="workspaceCard moduleMenuCard">
-          <h2>Quick Actions</h2>
-          <div className="moduleLinkGrid">
-            <Link href="/input"><InputIcon size={18} /><div><strong>Input Harian</strong><span>Pakan, mortalitas, dan kondisi lapangan.</span></div><b>→</b></Link>
-            <Link href="/sampling"><SamplingIcon size={18} /><div><strong>Sampling</strong><span>ABW, panjang, populasi teramati.</span></div><b>→</b></Link>
-            <Link href="/harvest"><HarvestIcon size={18} /><div><strong>Panen</strong><span>Panen parsial/final dan HarvestLot.</span></div><b>→</b></Link>
-            <Link href="/expenses"><CostIcon size={18} /><div><strong>Biaya</strong><span>Raw cost tambahan per siklus.</span></div><b>→</b></Link>
           </div>
         </section>
       </div>
