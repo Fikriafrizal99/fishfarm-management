@@ -6,7 +6,6 @@ import {
   FishMark,
   GridIcon,
   HomeIcon,
-  MenuIcon,
   SalesIcon,
 } from "./icons";
 
@@ -41,16 +40,10 @@ export function AppFrame({
   const farmHealthy = alertCount === 0;
 
   return (
-    <div className={`appFrame ${compact ? "compactFrame" : ""}`}>
+    <div className={`appFrame ${compact ? "appFrameUnified" : ""}`}>
       <header className="appTopbar">
         <div className="appBrand">
-          {compact ? (
-            <Link className="compactMenu" href="/budidaya" aria-label="Buka area Budidaya">
-              <MenuIcon size={19} />
-            </Link>
-          ) : (
-            <FishMark size={24} />
-          )}
+          <FishMark size={24} />
           <strong>FishFarm Management</strong>
         </div>
         <div className="topbarMeta">
@@ -63,26 +56,24 @@ export function AppFrame({
         </div>
       </header>
 
-      {!compact ? (
-        <aside className="appSidebar" aria-label="Navigasi utama">
-          <nav className="sidebarNav">
-            <Link className={`sidebarItem ${active === "dashboard" ? "active" : ""}`} href="/"><HomeIcon size={18} /><span>Dashboard</span></Link>
-            <Link className={`sidebarItem ${active === "budidaya" ? "active" : ""}`} href="/budidaya"><FarmIcon size={18} /><span>Budidaya</span></Link>
-            <Link className={`sidebarItem ${active === "sales" ? "active" : ""}`} href="/sales"><SalesIcon size={18} /><span>Sales CRM</span></Link>
-            <Link className={`sidebarItem ${active === "lainnya" ? "active" : ""}`} href="/more"><GridIcon size={18} /><span>Lainnya</span></Link>
-          </nav>
+      <aside className="appSidebar" aria-label="Navigasi utama">
+        <nav className="sidebarNav">
+          <Link className={`sidebarItem ${active === "dashboard" ? "active" : ""}`} href="/"><HomeIcon size={18} /><span>Dashboard</span></Link>
+          <Link className={`sidebarItem ${active === "budidaya" ? "active" : ""}`} href="/budidaya"><FarmIcon size={18} /><span>Budidaya</span></Link>
+          <Link className={`sidebarItem ${active === "sales" ? "active" : ""}`} href="/sales"><SalesIcon size={18} /><span>Sales CRM</span></Link>
+          <Link className={`sidebarItem ${active === "lainnya" ? "active" : ""}`} href="/more"><GridIcon size={18} /><span>Lainnya</span></Link>
+        </nav>
 
-          {showFarmState && activePonds !== undefined ? (
-            <Link className="sidebarFarmState sidebarFarmStateLink" href="/budidaya">
-              <span>Budidaya</span>
-              <strong className={farmHealthy ? "stateGood" : "stateMonitor"}><i />{farmHealthy ? "ON TARGET" : "MONITOR"}</strong>
-              <hr />
-              <b>{activePonds}</b>
-              <small>Kolam Aktif</small>
-            </Link>
-          ) : null}
-        </aside>
-      ) : null}
+        {showFarmState && activePonds !== undefined ? (
+          <Link className="sidebarFarmState sidebarFarmStateLink" href="/budidaya">
+            <span>Budidaya</span>
+            <strong className={farmHealthy ? "stateGood" : "stateMonitor"}><i />{farmHealthy ? "ON TARGET" : "MONITOR"}</strong>
+            <hr />
+            <b>{activePonds}</b>
+            <small>Kolam Aktif</small>
+          </Link>
+        ) : null}
+      </aside>
 
       <main className="appMain">{children}</main>
     </div>
