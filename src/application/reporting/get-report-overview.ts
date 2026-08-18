@@ -29,7 +29,6 @@ export async function getReportOverview(range: ReportingRange = {}) {
   const harvestedKg = harvests.reduce((sum, row) => sum + toNumber(row.weightKg), 0);
   const productionRevenue = harvests.reduce((sum, row) => sum + toNumber(row.revenueAmount), 0);
   const productionProfit = productionRevenue - productionCost;
-
   const pipelineValue = opportunities.reduce((sum, row) => sum + toNumber(row.expectedQtyKg) * toNumber(row.expectedPricePerKg), 0);
   const orderKg = orders.reduce((sum, order) => sum + order.items.reduce((inner, item) => inner + toNumber(item.quantityKg), 0), 0);
   const orderValue = orders.reduce((sum, order) => sum + order.items.reduce((inner, item) => inner + toNumber(item.quantityKg) * toNumber(item.unitPricePerKg), 0), 0);
@@ -91,7 +90,7 @@ export async function getReportOverview(range: ReportingRange = {}) {
     cycleComparison: (dashboard?.cycles ?? []).map((cycle) => ({
       cycleId: cycle.cycleId, pondCode: cycle.pondCode, species: cycle.species, status: cycle.status,
       survivalRatePct: cycle.survivalRatePct, targetSrPct: cycle.targetSrPct, fcr: cycle.fcr, targetFcr: cycle.targetFcr,
-      averageWeightG: cycle.averageWeightG, estimatedBiomassKg: cycle.estimatedBiomassKg, runningCost: cycle.runningCost,
+      averageWeightG: cycle.averageWeightG, estimatedBiomassKg: cycle.estimatedBiomassKg, runningCost: cycle.totalCost,
     })),
     trend: [...trendMap.values()].sort((a, b) => a.key.localeCompare(b.key)),
     topCustomers: [...customerMap.values()].sort((a, b) => b.orderValue - a.orderValue).slice(0, 10),
