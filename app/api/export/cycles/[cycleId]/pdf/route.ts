@@ -47,9 +47,20 @@ export async function GET(
   const harvestedKg = cycle.harvests.reduce((sum, row) => sum + n(row.weightKg), 0);
   const revenue = cycle.harvests.reduce((sum, row) => sum + n(row.revenueAmount), 0);
   const cost = cycle.expenses.reduce((sum, row) => sum + n(row.amount), 0);
-  const biomassGain = standingBiomass === null ? null : calculateBiomassGainKg({ standingBiomassKg: standingBiomass, harvestedBiomassKg: harvestedKg, initialBiomassKg: initialBiomass });
-  const currentFcr = biomassGain === null ? null : calculateFcr(feedKg, biomassGain);
   const isCompleted = cycle.status === "COMPLETED";
+
+  const activeBiomassGain = standingBiomass === null
+    ? null
+    : calculateBiomassGainKg({
+        standingBiomassKg: standingBiomass,
+        harvestedBiomassKg: harvestedKg,
+        initialBiomassKg: initialBiomass,
+      });
+  const finalBiomassGain = harvestedKg - initialBiomass;
+  const fcr = isCompleted
+    ? calculateFcr(feedKg, finalBiomassGain)
+    : activeBiomassGain === null ? null : calculateFcr(feedKg, activeBiomassGain);
+
   const actualHpp = isCompleted && harvestedKg > 0 ? cost / harvestedKg : null;
   const profit = isCompleted ? revenue - cost : null;
   const margin = isCompleted && revenue > 0 && profit !== null ? (profit / revenue) * 100 : null;
@@ -77,9 +88,9 @@ export async function GET(
         { label: "SR", value: pct(sr), emphasis: true },
         { label: "Target SR", value: cycle.targetSrPct === null ? "-" : `${number1.format(Number(cycle.targetSrPct))}%` },
         { label: "ABW terakhir", value: abw === null ? "-" : `${number1.format(abw)} g` },
-        { label: "Estimasi biomassa berdiri", value: standingBiomass === null ? "-" : `${number1.format(standingBiomass)} kg` },
+        { label: "Estimasi biomassa berdiri", value: isCompleted ? "- (siklus selesai)" : standingBiomass === null ? "-" : `${number1.format(standingBiomass)} kg` },
         { label: "Pakan kumulatif", value: `${number1.format(feedKg)} kg` },
-        { label: "FCR", value: currentFcr === null ? "-" : number2.format(currentFcr), emphasis: true },
+        { label: isCompleted ? "Final FCR" : "FCR berjalan", value: fcr === null ? "-" : number2.format(fcr), emphasis: true },
         { label: "Target FCR", value: cycle.targetFcr === null ? "-" : number2.format(Number(cycle.targetFcr)) },
         { label: "Total panen", value: `${number1.format(harvestedKg)} kg` },
       ],
