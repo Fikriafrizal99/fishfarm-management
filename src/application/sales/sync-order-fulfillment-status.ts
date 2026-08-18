@@ -1,4 +1,5 @@
 import {
+  DeliveryStatus,
   FulfillmentStatus,
   SalesOrderStatus,
 } from "@/src/generated/prisma/client";
@@ -34,7 +35,7 @@ export async function syncOrderFulfillmentStatus(
       .filter((row) => row.status !== FulfillmentStatus.CANCELLED)
       .reduce((sum, row) => sum + Number(row.allocatedKg), 0);
     const deliveredKg = item.deliveryItems
-      .filter((row) => row.delivery.status !== "CANCELLED")
+      .filter((row) => row.delivery.status === DeliveryStatus.DELIVERED)
       .reduce((sum, row) => sum + Number(row.quantityKg), 0);
     const requestedKg = Number(item.quantityKg);
 
