@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { getSalesCustomers } from "@/src/application/sales/get-sales-lists";
+import { SalesWorkspaceNav } from "@/app/_components/workspace-nav";
 import { submitCustomer } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -19,59 +19,98 @@ export default async function CustomersPage({
     databaseError = true;
   }
 
+  const activeCustomers = customers.filter((customer) => customer.active).length;
+
   return (
-    <div className="opsPage salesSubPage">
-      <div className="pageTitleRow salesSubTitle">
+    <div className="opsPage crmWorkspacePage">
+      <div className="workspaceHeadingRow">
         <div>
-          <Link className="detailBackLink" href="/sales">← Sales Dashboard</Link>
+          <p className="workspaceKicker">SALES CRM / ACCOUNTS</p>
           <h1>Customers</h1>
-          <p>Database account pembeli dan kontak komersial.</p>
+          <p>Master data pembeli, contact person, alamat, dan preferensi komersial.</p>
         </div>
-        <span className="statusBadge good">CUSTOMERS</span>
+        <div className="workspaceHeadingStats">
+          <span><b>{customers.length}</b> customer</span>
+          <span><b>{activeCustomers}</b> aktif</span>
+        </div>
       </div>
 
-      <nav className="salesWorkspaceNav" aria-label="Sales CRM navigation">
-        <Link href="/sales">Overview</Link>
-        <Link href="/sales/leads">Leads</Link>
-        <Link className="active" href="/sales/customers">Customers</Link>
-        <Link href="/sales/orders">Orders</Link>
-        <Link href="/sales/fulfillment">Fulfillment</Link>
-      </nav>
+      <SalesWorkspaceNav active="customers" />
 
       {params.saved === "1" ? <div className="notice successNotice">Customer berhasil disimpan.</div> : null}
       {params.error ? <div className="notice errorNotice">{params.error}</div> : null}
       {databaseError ? <div className="notice errorNotice">Database belum tersambung.</div> : null}
 
-      <section className="salesSubGrid">
-        <form action={submitCustomer} className="workspaceCard inputForm operationalFormCard">
-          <div className="sectionHeaderInline"><div><p className="eyebrow dark">New Customer</p><h2>Tambah pembeli</h2></div></div>
-          <label><span>Nama customer</span><input name="name" required placeholder="RM Sederhana Cianjur" /></label>
-          <label><span>Tipe customer</span><select name="customerType" defaultValue="OTHER"><option value="RESTAURANT">Restaurant</option><option value="WHOLESALER">Pengepul / Wholesaler</option><option value="RETAILER">Retailer</option><option value="MARKET">Pasar</option><option value="HOTEL">Hotel</option><option value="CATERING">Catering</option><option value="INDIVIDUAL">Individual</option><option value="OTHER">Lainnya</option></select></label>
-          <div className="formGrid">
-            <label><span>Contact person</span><input name="contactPerson" placeholder="Pak/Bu..." /></label>
-            <label><span>WhatsApp</span><input name="whatsapp" inputMode="tel" placeholder="08..." /></label>
+      <div className="workspaceSplit crmSplit">
+        <form action={submitCustomer} className="workspaceCard operationalWorkspaceForm">
+          <div className="workspaceCardHeader">
+            <div><span>NEW CUSTOMER</span><h2>Tambah account pembeli</h2></div>
+            <small>Master komersial</small>
           </div>
-          <div className="formGrid">
-            <label><span>Telepon</span><input name="phone" inputMode="tel" /></label>
-            <label><span>Email</span><input name="email" type="email" /></label>
+
+          <div className="formSectionBlock">
+            <h3>Account</h3>
+            <label><span>Nama customer</span><input name="name" required placeholder="RM Sederhana Cianjur" /></label>
+            <label>
+              <span>Tipe customer</span>
+              <select name="customerType" defaultValue="OTHER">
+                <option value="RESTAURANT">Restaurant</option>
+                <option value="WHOLESALER">Pengepul / Wholesaler</option>
+                <option value="RETAILER">Retailer</option>
+                <option value="MARKET">Pasar</option>
+                <option value="HOTEL">Hotel</option>
+                <option value="CATERING">Catering</option>
+                <option value="INDIVIDUAL">Individual</option>
+                <option value="OTHER">Lainnya</option>
+              </select>
+            </label>
           </div>
-          <label><span>Alamat</span><textarea name="addressText" rows={2} placeholder="Alamat pengiriman / lokasi customer" /></label>
-          <label><span>Catatan</span><textarea name="notes" rows={3} placeholder="Preferensi ukuran, pembayaran, hari order, dll." /></label>
-          <button className="primaryButton" type="submit" disabled={databaseError}>Simpan Customer</button>
+
+          <div className="formSectionBlock">
+            <h3>Kontak</h3>
+            <div className="compactFieldGrid two">
+              <label><span>Contact person</span><input name="contactPerson" placeholder="Pak/Bu..." /></label>
+              <label><span>WhatsApp</span><input name="whatsapp" inputMode="tel" placeholder="08..." /></label>
+              <label><span>Telepon</span><input name="phone" inputMode="tel" /></label>
+              <label><span>Email</span><input name="email" type="email" /></label>
+            </div>
+          </div>
+
+          <div className="formSectionBlock">
+            <h3>Lokasi & catatan</h3>
+            <label><span>Alamat</span><textarea name="addressText" rows={2} placeholder="Alamat pengiriman / lokasi customer" /></label>
+            <label><span>Catatan</span><textarea name="notes" rows={3} placeholder="Preferensi ukuran, pembayaran, hari order, dll." /></label>
+          </div>
+
+          <div className="workspaceFormActions">
+            <span>Customer menjadi account komersial, bukan entitas produksi.</span>
+            <button className="workspacePrimaryButton" type="submit" disabled={databaseError}>Simpan Customer</button>
+          </div>
         </form>
 
-        <section className="workspaceCard salesListCard">
-          <div className="sectionHeaderInline"><div><p className="eyebrow dark">Accounts</p><h2>Daftar customer</h2></div><span className="mutedInline">{customers.length} customer</span></div>
-          <div className="crmList">
-            {customers.length === 0 ? <div className="emptyInline">Belum ada customer.</div> : customers.map((customer) => (
-              <div className="crmRow" key={customer.id}>
-                <div><strong>{customer.name}</strong><span>{customer.customerType}{customer.contactPerson ? ` · ${customer.contactPerson}` : ""}</span>{customer.whatsapp ? <span>WA {customer.whatsapp}</span> : null}</div>
-                <div className="crmRowRight"><span className={`badge ${customer.active ? "good" : "warning"}`}>{customer.active ? "ACTIVE" : "INACTIVE"}</span></div>
-              </div>
+        <section className="workspaceCard recordWorkspaceCard">
+          <div className="workspaceCardHeader">
+            <div><span>ACCOUNTS</span><h2>Daftar customer</h2></div>
+            <small>{customers.length} record</small>
+          </div>
+
+          <div className="recordTable customerRecordTable">
+            <div className="recordTableHead">
+              <span>Customer</span><span>Kontak</span><span>Tipe</span><span>Status</span>
+            </div>
+            {customers.length === 0 ? (
+              <div className="recordEmpty">Belum ada customer.</div>
+            ) : customers.map((customer) => (
+              <article className="recordTableRow" key={customer.id}>
+                <div><strong>{customer.name}</strong><small>{customer.contactPerson ?? "Contact person belum diisi"}</small></div>
+                <div><strong>{customer.whatsapp ?? customer.phone ?? "—"}</strong><small>{customer.email ?? "Email belum diisi"}</small></div>
+                <div><strong>{customer.customerType}</strong><small>Account komersial</small></div>
+                <div><span className={`statusBadge ${customer.active ? "good" : "warning"}`}>{customer.active ? "ACTIVE" : "INACTIVE"}</span></div>
+              </article>
             ))}
           </div>
         </section>
-      </section>
+      </div>
     </div>
   );
 }
