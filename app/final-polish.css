@@ -1,0 +1,156 @@
+/* Final readability polish for Operational Workspace V2. */
+
+/* Typography: keep the compact system, but avoid micro text at desktop scale. */
+.workspaceKicker {
+  font-size: 9px !important;
+  letter-spacing: .08em;
+}
+.workspaceHeadingRow > div:first-child > p:last-child {
+  font-size: 12px;
+}
+.workspaceHeadingStats span {
+  padding: 0 12px;
+  font-size: 10px;
+}
+.workspaceHeadingStats b {
+  font-size: 13px;
+}
+.workspaceTabBar {
+  gap: 28px;
+  min-height: 42px;
+  margin-bottom: 8px;
+}
+.workspaceTab {
+  min-height: 42px;
+  font-size: 11px;
+}
+
+/* Planned CRM modules are roadmap context, not a second navigation row. */
+.workspaceFutureTabs {
+  display: none !important;
+}
+.workspaceRoadmapHint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 27px;
+  margin: -3px 0 13px;
+  padding: 0 2px;
+  color: #8a989c;
+  font-size: 8.5px;
+}
+.workspaceRoadmapHint > span {
+  margin-right: 2px;
+  color: #9aa5a8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+}
+.workspaceRoadmapHint strong {
+  color: #7c898d;
+  font-size: 8.5px;
+  font-weight: 600;
+}
+.workspaceRoadmapHint i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #c9d0d2;
+}
+
+.workspaceCardHeader > div > span {
+  font-size: 8px;
+}
+.workspaceCardHeader h2 {
+  font-size: 14px;
+}
+.workspaceCardHeader > small {
+  font-size: 9px;
+}
+.formSectionBlock h3 {
+  font-size: 9px;
+}
+.operationalWorkspaceForm label > span {
+  font-size: 10px;
+}
+.operationalWorkspaceForm input,
+.operationalWorkspaceForm select,
+.operationalWorkspaceForm textarea {
+  font-size: 11px;
+}
+.operationalWorkspaceForm input,
+.operationalWorkspaceForm select {
+  height: 36px;
+}
+.compactUnitInput b {
+  font-size: 9px;
+}
+.workspaceFormActions > span,
+.workspaceInlineNotice,
+.contextActionLink.inline {
+  font-size: 9.5px;
+}
+.workspacePrimaryButton {
+  min-width: 138px;
+  min-height: 36px;
+  font-size: 10px;
+}
+
+/* Context rail readability. */
+.cycleQuickList strong,
+.contextMetricList strong {
+  font-size: 10.5px;
+}
+.cycleQuickList small,
+.workflowSteps span {
+  font-size: 9px;
+}
+.contextMetricList span {
+  font-size: 9.5px;
+}
+.workflowSteps strong {
+  font-size: 10px;
+}
+
+/* CRM record tables: slightly more legible without returning to oversized cards. */
+.recordTableHead {
+  min-height: 34px;
+  font-size: 8.5px;
+}
+.recordTableRow {
+  min-height: 61px;
+}
+.recordTableRow strong {
+  font-size: 10px;
+}
+.recordTableRow small {
+  font-size: 8.5px;
+}
+.recordEmpty {
+  font-size: 10px;
+}
+
+/* Keep large desktop workspaces visually connected instead of pushing stats too far away. */
+@media (min-width: 1280px) {
+  .operationWorkspacePage {
+    width: min(100% - 56px, 1080px);
+  }
+  .crmWorkspacePage {
+    width: min(100% - 56px, 1140px);
+  }
+}
+
+@media (max-width: 760px) {
+  .workspaceHeadingRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .workspaceHeadingStats span:first-child {
+    padding-left: 0;
+  }
+  .workspaceRoadmapHint {
+    line-height: 1.5;
+  }
+}
