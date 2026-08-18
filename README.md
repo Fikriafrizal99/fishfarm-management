@@ -8,7 +8,7 @@ Mobile-first aquaculture farm management system for operating fish-production cy
 
 Production remains deterministic and explainable. Sales CRM is a separate commercial domain and does not redefine farming KPI formulas.
 
-## Application Boundary — V0.9
+## Application Boundary — V0.10
 
 ```text
 BUDIDAYA / PRODUCTION                 SALES CRM
@@ -30,41 +30,61 @@ HarvestLot        ← bridge →      FulfillmentAllocation
                                       Invoice
                                          ↓
                                       Payment
+
+          HISTORY / REPORTING
+                 ↑
+       read-only aggregation
+       from source-of-truth data
 ```
 
-The domains are **connected but loosely coupled**.
-
-`Lead`, `Customer`, `Opportunity`, and `SalesOrder` never need a direct Pond or ProductionCycle reference. Physical production becomes commercially committed only through:
+Production and Sales remain **connected but loosely coupled**. CRM never needs a direct Pond or ProductionCycle reference. Commercial commitment happens only through:
 
 ```text
 SalesOrderItem ← FulfillmentAllocation → HarvestLot
 ```
 
-This allows orders before harvest exists, one harvest to serve multiple customers, one order to use multiple harvest lots, and independent demand forecasting.
+## Production Management — V0.10
 
-See [`docs/SALES_CRM.md`](docs/SALES_CRM.md).
+V0.10 removes the dependency on development seed data for day-to-day setup.
 
-## Production Flow
+### Pond lifecycle
+
+- create Pond
+- edit name, type, dimensions, status, and notes
+- delete only a truly empty Pond with no cycle/cost history
+- a Pond with history is retained for auditability and can be made `INACTIVE` after its active cycle ends
+
+### ProductionCycle lifecycle
+
+Creating a cycle is atomic:
 
 ```text
-Daily Input / Sampling / Harvest
-              ↓
-         Server Action
-              ↓
-       Application Service
-              ↓
- PostgreSQL raw records + Expense ledger
-              ↓
-         KPI calculation
-              ↓
-      Rules Decision Engine
-              ↓
-OPEN / ACKNOWLEDGED / RESOLVED alerts
-              ↓
-      Dashboard + Pond Detail
+ProductionCycle ACTIVE
+      +
+Stocking
+      +
+optional SEED Expense
 ```
 
-## Sales CRM Flow — V0.9
+A cycle can be edited while operational. Completed/cancelled cycles are read-only. A cycle with no Harvest can be cancelled; its existing raw logs remain as audit history. A cycle that already has Harvest must be closed through Final Harvest instead of cancellation.
+
+Changes to active cycle targets/stocking trigger Decision Engine reevaluation.
+
+## Operational Correction Policy
+
+Raw operational records now have history views.
+
+- Sampling — history + safe correction while cycle is ACTIVE/HARVESTING
+- Feed — history + correction; linked feed Expense is recalculated
+- Mortality — history + correction with population validation
+- Manual Expense — ledger + correction while cycle is operational
+- Harvest — history is read-only because a Harvest creates a HarvestLot and can already be referenced by commercial fulfillment
+
+Completed/cancelled production records are not silently rewritten.
+
+Observed, estimated, projected, and actual-final values remain distinct.
+
+## Sales CRM Flow — V0.9+
 
 ```text
 Lead
@@ -86,88 +106,133 @@ Payment
 
 Behavior:
 
-- creating an Opportunity from a Lead marks the Lead `QUALIFIED`,
-- converting an OPEN Opportunity into a Sales Order marks the Opportunity `WON` and its originating Lead `CONVERTED`,
-- Fulfillment reserves harvested stock without directly binding CRM records to ponds,
-- Sales Order becomes `PARTIALLY_FULFILLED` after stock is allocated or partially delivered,
-- Sales Order becomes `FULFILLED` only when requested quantity has actually been delivered,
-- Invoice stores a billing snapshot independent from later source-order edits,
-- Payment automatically changes Invoice status to `PARTIALLY_PAID` or `PAID`.
+- creating an Opportunity from a Lead marks the Lead `QUALIFIED`
+- converting an OPEN Opportunity into a Sales Order marks the Opportunity `WON` and originating Lead `CONVERTED`
+- Fulfillment reserves harvested stock without directly binding CRM records to ponds
+- Sales Order becomes `PARTIALLY_FULFILLED` when fulfillment starts
+- only actually `DELIVERED` quantity can complete the Sales Order
+- Invoice stores a billing snapshot
+- Payment updates Invoice to `PARTIALLY_PAID` / `PAID`
+
+## Navigation Principle
+
+Navigation is intentionally limited to two layers:
+
+1. **Sidebar** — major areas: Dashboard, Budidaya, Sales CRM, Lainnya.
+2. **Workspace tabs** — submodules inside the selected area.
+
+Header cards/context rails should not repeat links already available in those layers. Transaction selectors such as `Kolam / Siklus` remain because they choose data context rather than navigation.
+
+### Budidaya tabs
+
+```text
+Overview | Kolam | Siklus | Input Harian | Sampling | Panen | Biaya
+```
+
+### Utility tabs
+
+```text
+Riwayat | Laporan
+```
+
+`/more` redirects directly to `/history`; the redundant Utility Overview page was removed.
 
 ## Implemented Routes
 
 ### Main / Production
 
 - `/` — farm dashboard
-- `/budidaya` — production workspace
-- `/input` — daily feed, mortality, and operational input
-- `/sampling` — sampling & growth
-- `/harvest` — partial/final harvest
-- `/expenses` — direct operating costs
-- `/ponds/[pondCode]` — pond/cycle detail
-- `/alerts` — alert center
-- `/more` — utility/insight workspace
-- `/history` — unified production + commercial history
-- `/reports` — production + commercial performance summary
+- `/budidaya` — production overview
+- `/ponds` — Pond create/edit/safe-delete workspace
+- `/cycles` — ProductionCycle create/edit/cancel/read-only lifecycle
+- `/input` — daily feed/mortality input + raw-log history/correction
+- `/sampling` — sampling input + observed history/correction
+- `/harvest` — partial/final harvest + immutable harvest history
+- `/expenses` — manual operating cost input + editable ledger
+- `/ponds/[pondCode]` — pond/cycle operational detail
+- `/alerts` — Decision Engine alert center
+- `/history` — production + commercial history
+- `/reports` — period-aware business performance
+- `/more` — redirects to `/history`
 - `/api/health/db` — PostgreSQL health check
 
 ### Sales CRM
 
-- `/sales` — commercial dashboard
-- `/sales/leads` — acquisition / incoming demand
-- `/sales/customers` — customer accounts
-- `/sales/pipeline` — qualified Opportunities
-- `/sales/orders` — Sales Orders and Opportunity conversion
-- `/sales/fulfillment` — SalesOrderItem ↔ HarvestLot allocation
-- `/sales/deliveries` — delivery creation and status progression
-- `/sales/invoices` — billing / invoice issuance
-- `/sales/payments` — DP, partial payment, and settlement
+- `/sales`
+- `/sales/leads`
+- `/sales/customers`
+- `/sales/pipeline`
+- `/sales/orders`
+- `/sales/fulfillment`
+- `/sales/deliveries`
+- `/sales/invoices`
+- `/sales/payments`
 
-## Navigation Principle
+## History — V0.10
 
-The application intentionally limits navigation duplication:
+Production history is intentionally separated by data maturity.
 
-1. **Sidebar** selects the major area: Dashboard, Budidaya, Sales CRM, or Lainnya.
-2. **Workspace tabs** select the submodule inside that area.
+### Siklus Berjalan
 
-Header cards and context rails should not repeat links already available in those two navigation layers. Form selectors such as `Kolam / Siklus` remain because they choose transaction context, not navigation.
+Shows current operational state:
 
-`Lainnya` is reserved for History, Reports, and system utilities; it does not duplicate Budidaya or Sales CRM module links.
+- SR
+- FCR
+- ABW
+- estimated biomass
+- running cost
+- target harvest date
 
-## Sales Dashboard KPIs
+It **does not** label current cost as final loss/profit.
 
-- open leads
-- OPEN opportunity pipeline value
-- active order kg
-- active order value
-- allocated kg
-- available harvested kg
-- outstanding receivables
-- cash collected this month
+### Siklus Selesai
 
-## History & Reporting Baseline
+Only `COMPLETED` cycles show actual-final financial outputs:
 
-`/history` is a read-only audit view combining:
+- actual harvested kg
+- Actual HPP/kg
+- actual revenue
+- net profit
+- margin
 
-- production cycles,
-- harvested kg,
-- production cost/revenue/profit,
-- Sales Orders,
-- delivered kg,
-- invoiced amount,
-- paid amount,
-- outstanding receivables.
+### Commercial ledger
 
-`/reports` provides a read-only business summary for:
+Order history reconciles:
 
-- production cycle count and completed cycles,
-- harvested kg, production cost/revenue/profit,
-- active customers and OPEN pipeline,
-- order kg/value and delivered kg,
-- invoiced / collected / outstanding values,
-- basic customer contribution by ordered quantity/value and collection.
+```text
+Order → Delivered → Invoice → Paid → Outstanding
+```
 
-These reports derive from existing source-of-truth records and introduce no duplicate accounting ledger.
+The History page supports date range filtering for completed cycles and commercial orders. Active cycles remain visible as a current snapshot.
+
+## Reports — V0.10
+
+Reports are read-only aggregations from the same PostgreSQL source of truth; they create no duplicate accounting ledger.
+
+### Executive KPIs
+
+- total harvest in period
+- production cost in period
+- order value in period
+- collected cash in period
+
+### Production analytics
+
+- active vs completed cycle counts
+- period revenue/cost/net result
+- monthly revenue vs cost trend
+- monthly harvest kg
+- current active-cycle comparison for SR, FCR, ABW, biomass, cost, and status
+
+### Commercial analytics
+
+- current OPEN pipeline
+- current receivables
+- period orders/delivery/invoice/payment
+- monthly order vs collection trend
+- customer contribution
+
+Reports support `from` / `to` date filters.
 
 ## HarvestLot Behavior
 
@@ -187,55 +252,11 @@ Available inventory is derived:
 available kg = harvest lot kg - active allocation kg
 ```
 
-No unrelated duplicate manual stock balance is maintained.
-
-## Commercial State Rules
-
-### Lead
-
-```text
-NEW → CONTACTED → QUALIFIED → CONVERTED
-                         ↘ LOST
-```
-
-### Opportunity
-
-```text
-OPEN → WON
-   ↘ LOST
-```
-
-`WON` is normally produced by conversion into a Sales Order.
-
-### Sales Order
-
-```text
-CONFIRMED
-    ↓ allocation / delivery starts
-PARTIALLY_FULFILLED
-    ↓ requested quantity delivered
-FULFILLED
-```
-
-### Delivery
-
-```text
-PLANNED → DISPATCHED → DELIVERED
-    ↘ CANCELLED
-```
-
-### Invoice / Payment
-
-```text
-ISSUED → PARTIALLY_PAID → PAID
-   ↘ VOID (only before payment exists)
-```
-
 ## Authentication / Authorization Direction
 
-Authentication is intentionally deferred while the product is personal/single-user.
+Authentication remains intentionally **deferred** while the application is personal/single-user.
 
-The database foundation remains ready for a later multi-user layer through:
+The schema foundation is retained:
 
 ```text
 User
@@ -245,22 +266,33 @@ FarmMembership
 FarmRole
 ```
 
-The current `OWNER / MANAGER / OPERATOR / VIEWER` domain foundation should not be removed. Authentication and server-side permission enforcement can be added later without redesigning production or CRM entities.
+The existing `OWNER / MANAGER / OPERATOR / VIEWER` structure should not be removed. Auth and server permission enforcement can be added later without redesigning production or CRM entities.
 
-## Transitional Harvest Commercial Fields
+## Export Status
 
-The existing Harvest fields `buyer_name`, `selling_price_per_kg`, and `revenue_amount` remain as compatibility snapshots. CRM is the commercial source-of-truth direction, but the legacy fields are not destructively removed in V0.9.
+CSV/PDF export is **not part of V0.10 Phase A+B**. It remains the next dedicated Export phase so that download formats are built on top of the now-stable CRUD/history/report structures rather than duplicated early.
 
-## Development Database
+Planned:
 
-- PostgreSQL 17 in Docker Compose
-- Prisma ORM 7
-- PostgreSQL-specific constraints
-- deterministic farming seed
-- deterministic CRM seed
-- automatic Decision Engine evaluation
+- CSV raw/history exports
+- PDF Farm Report
+- PDF Cycle Report
+- PDF Invoice
 
-### Windows / PowerShell
+## Product Principles
+
+- PostgreSQL is the source of truth, not spreadsheets
+- observed, estimated, projected, and actual-final values remain distinct
+- production KPIs trace back to raw production records
+- corrections are constrained by lifecycle state
+- completed-cycle outputs are auditable
+- HarvestLot/Fulfillment is the production-to-sales bridge
+- Invoice is a billing snapshot
+- Payment is the cash-collection source of truth
+- reporting reads source-of-truth transactions instead of creating a second ledger
+- AI remains a later interpretation layer
+
+## Development
 
 ```powershell
 Copy-Item .env.example .env
@@ -279,54 +311,34 @@ npm run typecheck
 npm run build
 ```
 
-## Development CRM Scenario
+## Validation Status
 
-The CRM seed includes:
+The V0.8 production/database baseline previously passed local bootstrap, Prisma generation, constraints/seed, Decision Engine evaluation, TypeScript, production build, DB health, and UI sanity checks.
 
-- RM Sederhana Cianjur customer
-- Pengepul Nila Cianjur customer
-- Hotel Cianjur lead
-- one `WON` opportunity already linked to `SO-DEV-001`
-- one separate `OPEN` Nila opportunity for Pipeline → Order testing
-- `SO-DEV-001` for 100 kg Nila
-- `INV-DEV-001`
-- Rp500.000 partial payment / DP
-- no HarvestLot allocation yet
+**V0.9 CRM + V0.10 Phase A/B are implemented and require a fresh local validation gate.**
 
-The missing allocation is intentional. It demonstrates that demand/order/billing can exist before harvested inventory is available.
+No Prisma schema change was required for V0.10, so database reset/bootstrap is not required.
 
-After a new Harvest is recorded, a HarvestLot can be allocated from `/sales/fulfillment`, then delivered from `/sales/deliveries`.
+```powershell
+git pull
+npm run typecheck
+npm run build
+npm run dev
+```
 
-## Database Integrity
+Validate:
 
-Production constraints cover stocking, feed, mortality, sampling, cost, harvest, and one-open-cycle-per-pond.
-
-Commercial constraints cover:
-
-- positive lead/opportunity quantity and price when supplied
-- customer interaction target requirement
-- positive SalesOrderItem quantity and price
-- positive HarvestLot quantity
-- positive fulfillment allocation
-- positive delivery quantity
-- non-negative invoice subtotal / total
-- positive payment amount
-
-Cross-row balances such as order over-allocation, delivery beyond allocated stock, duplicate over-invoicing, and over-payment are enforced in application services because they depend on current transactional balances.
-
-## Product Principles
-
-- PostgreSQL is the source of truth, not spreadsheets
-- observed, estimated, projected, and actual-final values remain distinct
-- every production KPI traces back to raw production records
-- production and commercial domains have explicit boundaries
-- CRM cannot silently change biological formulas
-- HarvestLot/Fulfillment is the production-to-sales bridge
-- invoice totals are historical billing snapshots
-- payment is the cash-collection source of truth
-- reporting reads source-of-truth transactions instead of creating a second ledger
-- alerts must explain why they fired
-- AI is a later interpretation layer, not a replacement for formulas or ledgers
+```text
+Pond create → edit → safe delete empty pond
+Pond create → start cycle → pond deletion blocked
+Cycle create → edit targets/stocking → cancel before harvest
+Input/Sampling/Expense → history → correction
+Completed/cancelled records → locked
+Harvest → immutable history
+History → active vs completed semantics
+Reports → period filter + trends + cycle comparison
+CRM V0.9 end-to-end flow
+```
 
 ## Documentation
 
@@ -348,43 +360,13 @@ Cross-row balances such as order over-allocation, delivery beyond allocated stoc
 - **Backend:** Next.js server-side application/service layer
 - **Database:** PostgreSQL
 - **ORM:** Prisma 7
-- **Architecture:** modular monolith with explicit domain boundaries
-
-## Validation Status
-
-The V0.8 production/database foundation has already passed local bootstrap, Prisma generation, DB constraints/seed, Decision Engine evaluation, TypeScript, production build, DB health check, and visual sanity checks.
-
-**V0.9 CRM flow plus the read-only History/Reports baseline are implemented remotely and require local validation.**
-
-Validation gate:
-
-```powershell
-git pull
-npm run db:seed
-npm run typecheck
-npm run build
-npm run dev
-```
-
-Then validate:
-
-```text
-Pipeline
-→ convert Opportunity to Order
-→ Harvest / HarvestLot
-→ Fulfillment allocation
-→ Delivery
-→ Invoice
-→ Payment
-→ verify Sales Dashboard KPIs/statuses
-→ verify /history reconciliation
-→ verify /reports totals
-```
+- **Architecture:** modular monolith
 
 ## Status
 
-**Version:** 0.9.0  
-**Phase:** End-to-End Sales CRM Flow + History/Reporting Baseline  
-**Production core:** locally validated V0.8 baseline  
-**CRM V0.9:** implemented, local runtime validation pending  
-**History/Reports:** read-only baseline implemented, local validation pending
+**Version:** 0.10.0  
+**Phase:** Core Usability + History/Reporting  
+**Production core:** validated V0.8 baseline, V0.10 extension pending local validation  
+**CRM:** V0.9 implemented, local runtime validation pending  
+**Auth:** deferred  
+**Export:** next phase
