@@ -1,12 +1,12 @@
 # Product Roadmap — FishFarm Management
 
-Version: **0.9**
+Version: **0.10**
 
 ## Current State
 
 The V0.8 production/database foundation has passed local bootstrap, seed, Decision Engine, TypeScript, production build, DB health, and UI sanity checks.
 
-V0.9 completes the first end-to-end Sales CRM transaction flow in code and is awaiting local runtime validation. A read-only History & Reporting baseline is also implemented without changing the database schema.
+V0.9 implements the first end-to-end Sales CRM transaction flow. V0.10 adds the missing personal-operations usability layer: Pond/Cycle management, safe raw-log corrections, lifecycle-aware History, and period-aware Reports. V0.9/V0.10 require fresh local runtime validation.
 
 ## Phase 0 — Product & Architecture Foundation
 
@@ -36,10 +36,10 @@ Status: **VALIDATED BASELINE**
 - [x] PostgreSQL constraints
 - [x] database bootstrap
 - [x] PWA manifest baseline
-- [ ] authentication — **deferred while the product is single-user/personal**
+- [ ] authentication — **deferred while product is personal/single-user**
 - [ ] production deployment
 
-The schema already keeps `User`, `FarmMembership`, and `FarmRole` so authentication/authorization can be added later without redesigning the core domain.
+`User`, `FarmMembership`, and `FarmRole` remain in the schema for future authentication/authorization.
 
 ## Phase 2 — Production Core
 
@@ -50,11 +50,12 @@ Status: **IMPLEMENTED / BASELINE VALIDATED**
 - [x] sampling input
 - [x] ABW / biomass / SR / mortality / FCR / ADG
 - [x] pond detail and growth chart
-- [x] partial harvest
-- [x] final harvest
+- [x] partial/final harvest
 - [x] HarvestLot auto-creation
 - [x] Actual HPP / profit / margin / Final FCR
-- [ ] full Farm/Pond/Cycle admin CRUD
+- [x] Pond create/edit/safe-delete management
+- [x] ProductionCycle create/edit/cancel/read-only lifecycle
+- [ ] Farm settings CRUD
 - [ ] projected HPP/margin/BEP engine UI
 
 ## Phase 3 — Decision Engine
@@ -69,6 +70,8 @@ Status: **IMPLEMENTED V1 / BASELINE VALIDATED**
 - [x] alert open/update/resolve lifecycle
 - [x] Dashboard status from alert severity
 - [x] Alert Center read UI
+- [x] cycle target/raw correction triggers reevaluation
+- [x] cancellation resolves active cycle alerts
 - [ ] acknowledge alert action
 - [ ] configurable rule UI
 - [ ] mortality daily/trend rule
@@ -78,104 +81,95 @@ Status: **IMPLEMENTED V1 / BASELINE VALIDATED**
 
 Status: **COMPLETE**
 
-- [x] Customer
-- [x] Lead
-- [x] SalesOpportunity
-- [x] CustomerInteraction
+- [x] Customer / Lead / Opportunity / Interaction
 - [x] SalesOrder / SalesOrderItem
-- [x] HarvestLot
-- [x] FulfillmentAllocation
-- [x] Delivery / DeliveryItem schema
-- [x] Invoice schema
-- [x] Payment schema
+- [x] HarvestLot / FulfillmentAllocation
+- [x] Delivery / Invoice / Payment schema
 - [x] Sales Dashboard
-- [x] Lead UI
-- [x] Customer UI
-- [x] Order UI
-- [x] Fulfillment UI
-- [x] deterministic CRM seed
-- [x] CRM constraints
+- [x] Lead / Customer / Order / Fulfillment UI
+- [x] deterministic CRM seed + constraints
 
 ## Phase 5 — End-to-End CRM Flow — V0.9
 
 Status: **IMPLEMENTED / LOCAL VALIDATION PENDING**
 
-### Acquisition & Pipeline
+- [x] Pipeline workspace and Lead → Opportunity
+- [x] Opportunity → Sales Order conversion
+- [x] OPEN → WON and Lead → CONVERTED lifecycle
+- [x] fulfillment allocation balance validation
+- [x] Delivery PLANNED → DISPATCHED → DELIVERED
+- [x] delivered quantity controls Sales Order completion
+- [x] Invoice issuance / uninvoiced balance / VOID guard
+- [x] Payment DP / partial / final + overpayment protection
+- [x] receivable and monthly collection from Payment source of truth
 
-- [x] Opportunity workspace `/sales/pipeline`
-- [x] Opportunity create action
-- [x] Lead → QUALIFIED when used to create Opportunity
-- [x] OPEN → WON conversion through Sales Order
-- [x] originating Lead → CONVERTED after order conversion
-- [x] Opportunity LOST action with order-safety guard
-- [x] OPEN pipeline value remains separate from booked order value
+## Phase 6 — Core Usability — V0.10 / Phase A
 
-### Order & Fulfillment
+Status: **IMPLEMENTED / LOCAL VALIDATION PENDING**
 
-- [x] Sales Order can reference an Opportunity
-- [x] Pipeline → Order prefilled navigation
-- [x] Fulfillment allocation validates farm/species/order/lot balances
-- [x] allocation synchronizes order fulfillment status
+### Master data
 
-### Delivery
+- [x] Budidaya tab `Kolam`
+- [x] create Pond
+- [x] edit Pond dimensions/type/status/notes
+- [x] safe delete only for truly empty Pond
+- [x] historical Pond retained instead of destructive delete
+- [x] Budidaya tab `Siklus`
+- [x] create ACTIVE ProductionCycle
+- [x] atomic Stocking + optional SEED Expense creation
+- [x] edit targets and initial stocking while operational
+- [x] completed/cancelled Cycle read-only
+- [x] safe cycle cancellation before Harvest
+- [x] cycle with Harvest must close through Final Harvest
 
-- [x] Delivery workspace `/sales/deliveries`
-- [x] create PLANNED / DISPATCHED / DELIVERED delivery
-- [x] PLANNED → DISPATCHED → DELIVERED progression
-- [x] cancellation before delivery completion
-- [x] delivery quantity cannot exceed allocated unbooked quantity
-- [x] planned/dispatched quantity cannot be scheduled twice
-- [x] only DELIVERED quantity can complete Sales Order
+### Operational history & correction
 
-### Billing
+- [x] Sampling history + ACTIVE/HARVESTING correction
+- [x] Feed history + correction
+- [x] linked feed Expense recalculation after feed correction
+- [x] Mortality history + population-safe correction
+- [x] Manual Expense ledger + correction
+- [x] completed/cancelled operational logs locked
+- [x] Harvest history
+- [x] Harvest correction intentionally locked because of HarvestLot/commercial references
 
-- [x] Invoice workspace `/sales/invoices`
-- [x] invoice number generation
-- [x] remaining uninvoiced order balance validation
-- [x] subtotal + adjustment snapshot
-- [x] invoice VOID only before payment exists
+## Phase 7 — History & Reporting — V0.10 / Phase B
 
-### Collection
+Status: **IMPLEMENTED / LOCAL VALIDATION PENDING**
 
-- [x] Payment workspace `/sales/payments`
-- [x] CASH / TRANSFER / QRIS / OTHER
-- [x] over-payment protection
-- [x] DP / partial / final payment support
-- [x] automatic `PARTIALLY_PAID` / `PAID` status
-- [x] Sales Dashboard receivable and monthly collection remain Payment-based
+### History
 
-### V0.9 Validation Gate
+- [x] redundant `Lainnya > Overview` removed (`/more` redirects to `/history`)
+- [x] Utility navigation reduced to `Riwayat | Laporan`
+- [x] active and completed production cycles separated
+- [x] active cycles show SR/FCR/ABW/biomass/running cost instead of fake final loss
+- [x] completed cycles show Actual HPP/revenue/profit/margin
+- [x] commercial Order → Delivered → Invoice → Paid → Outstanding reconciliation
+- [x] date range filter
 
-Run:
+### Reports
 
-```powershell
-git pull
-npm run db:seed
-npm run typecheck
-npm run build
-npm run dev
-```
+- [x] period filter
+- [x] executive KPI hierarchy instead of equal-weight card wall
+- [x] monthly production revenue vs cost trend
+- [x] monthly harvest kg visualization
+- [x] current active-cycle SR/FCR/ABW/biomass/cost comparison
+- [x] period Order vs Collection trend
+- [x] current pipeline / receivable snapshot
+- [x] customer contribution table
+- [x] reporting remains read-only over PostgreSQL source of truth
 
-Then validate:
+## Phase 8 — Export / Documents
 
-```text
-OPEN Opportunity
-→ convert to Sales Order
-→ Harvest
-→ HarvestLot
-→ Fulfillment allocation
-→ Delivery PLANNED
-→ DISPATCHED
-→ DELIVERED
-→ Invoice
-→ partial Payment
-→ final Payment
-→ Dashboard reconciliation
-```
+Status: **NEXT**
 
-## Phase 6 — CRM Usability & Control
+- [ ] CSV raw/history export
+- [ ] CSV report export
+- [ ] PDF Farm Report
+- [ ] PDF Cycle Report
+- [ ] PDF Invoice
 
-Next after V0.9 runtime validation:
+## Phase 9 — CRM Usability & Control
 
 - [ ] CustomerInteraction write timeline
 - [ ] follow-up update/reminder workflow
@@ -188,39 +182,10 @@ Next after V0.9 runtime validation:
 - [ ] delivery proof / attachments
 - [ ] quotation workflow
 
-## Phase 7 — Production & Commercial History
-
-Status: **READ-ONLY BASELINE IMPLEMENTED / EXPANSION PENDING**
-
-Shared history/reporting:
-
-- [x] unified production + commercial history `/history`
-- [x] production + commercial business summary `/reports`
-- [x] cycle harvest / cost / revenue / profit history
-- [x] order / delivered / invoiced / paid / outstanding history
-- [x] basic sales by customer
-- [x] customer ordered kg/value
-- [x] basic collection / receivable performance
-
-Production next:
-
-- [ ] completed-cycle comparison
-- [ ] FCR/SR/HPP/profit benchmarking
-- [ ] cost composition history
-- [ ] period filters
-
-Commercial next:
-
-- [ ] average selling price history
-- [ ] customer margin contribution
-- [ ] repeat-order rate
-- [ ] receivable aging buckets
-- [ ] CSV/PDF export
-
 ## V1.0 Release Definition
 
 ```text
-Production Cycle
+Pond / Cycle Management
     ↓
 Daily Operations + Sampling
     ↓
@@ -230,30 +195,24 @@ Harvest → HarvestLot
     ↓
 Lead / Opportunity / Sales Order
     ↓
-Fulfillment
+Fulfillment → Delivery
     ↓
-Delivery
+Invoice → Payment
     ↓
-Invoice
-    ↓
-Payment
-    ↓
-Production + Customer History
+History + Performance Report
 ```
 
 Core operation must not require spreadsheets.
 
 ## Post-MVP Candidates
 
-- water-quality logs
-- pH / DO / temperature
+- water-quality logs (pH / DO / temperature)
 - feed inventory and procurement
 - supplier management
 - Telegram alerts
 - PWA offline drafts/sync
 - multi-user authorization
 - attachments/photos
-- PDF cycle/invoice documents
 - WhatsApp CRM integration
 - demand vs projected harvest capacity
 
