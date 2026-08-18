@@ -33,6 +33,14 @@ textarea { font-weight: 400; }
 .topbarMeta { font-size: 12px; }
 .sidebarItem { font-size: 12px; font-weight: 500; }
 .sidebarItem.active { font-weight: 650; }
+.notificationIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  color: #61777e;
+  text-decoration: none;
+}
+.notificationIcon.active { background: var(--teal-soft); color: var(--teal-dark); }
 
 /* Page hierarchy */
 .pageTitleRow h1,
@@ -229,6 +237,7 @@ textarea { font-weight: 400; }
 .trendBars b { font-size: 8.5px; }
 .harvestColumnChart strong { font-size: 8.5px; }
 .harvestColumnChart span { font-size: 8px; }
+.reportChartEmpty { min-height: 155px; display: grid; place-items: center; }
 
 /* CRM summaries */
 .financeSummaryStrip span,
