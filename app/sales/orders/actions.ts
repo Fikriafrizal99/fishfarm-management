@@ -14,6 +14,7 @@ function requiredNumber(formData: FormData, key: string, label: string): number 
 export async function submitSalesOrder(formData: FormData): Promise<void> {
   try {
     const customerId = String(formData.get("customerId") ?? "").trim();
+    const opportunityId = String(formData.get("opportunityId") ?? "").trim();
     const speciesId = String(formData.get("speciesId") ?? "").trim();
     const deliveryDate = String(formData.get("requestedDeliveryDate") ?? "").trim();
 
@@ -22,17 +23,18 @@ export async function submitSalesOrder(formData: FormData): Promise<void> {
 
     await recordSalesOrder({
       customerId,
+      opportunityId: opportunityId || undefined,
       speciesId,
       quantityKg: requiredNumber(formData, "quantityKg", "Jumlah order"),
       unitPricePerKg: requiredNumber(formData, "unitPricePerKg", "Harga per kg"),
-      requestedDeliveryDate: deliveryDate
-        ? new Date(`${deliveryDate}T12:00:00+07:00`)
-        : undefined,
+      requestedDeliveryDate: deliveryDate ? new Date(`${deliveryDate}T12:00:00+07:00`) : undefined,
       paymentTerms: String(formData.get("paymentTerms") ?? ""),
       notes: String(formData.get("notes") ?? ""),
     });
 
     revalidatePath("/sales");
+    revalidatePath("/sales/leads");
+    revalidatePath("/sales/pipeline");
     revalidatePath("/sales/orders");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal menyimpan sales order";
