@@ -26,7 +26,7 @@ export default async function SalesDashboardPage() {
   return (
     <div className="opsPage crmWorkspacePage salesOpsPage">
       <div className="workspaceHeadingRow">
-        <div><p className="workspaceKicker">COMMERCIAL OPERATIONS</p><h1>Sales CRM</h1><p>Lead → Pipeline → Order → Fulfillment → Delivery → Invoice → Payment.</p></div>
+        <div><p className="workspaceKicker">COMMERCIAL OPERATIONS</p><h1>Sales CRM</h1><p>Lead → Pipeline → Order → Fulfillment → Finance. Delivery, Invoice, dan Payment tetap tercatat sebagai transaksi terpisah di dalam flow tersebut.</p></div>
       </div>
 
       <SalesWorkspaceNav active="overview" />
@@ -68,7 +68,7 @@ export default async function SalesDashboardPage() {
 
       <section className="workspaceCard crmBoundaryCard">
         <SalesIcon size={18} />
-        <div><strong>CRM flow aktif</strong><p>Opportunity, Delivery, Invoice, dan Payment sekarang memiliki write flow. Production tetap hanya terhubung ke Sales melalui HarvestLot/Fulfillment.</p></div>
+        <div><strong>CRM flow lengkap, workspace lebih ringkas</strong><p>Fulfillment memuat Allocation + Delivery. Finance memuat Invoice + Payment + aging piutang. Backend transaction model tetap terpisah dan auditable.</p></div>
       </section>
     </div>
   );
