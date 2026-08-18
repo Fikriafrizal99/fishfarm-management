@@ -196,6 +196,7 @@ export default async function PondDetailPage({
             </div>
             <p>{detail.pondName ?? "Kolam budidaya"} · Hari ke-{detail.day} · {detail.cycleCode}</p>
           </div>
+          <Link className="detailManageLink" href={`/ponds?editCode=${encodeURIComponent(detail.pondCode)}`}>Edit Kolam</Link>
         </div>
 
         <section className="detailMetricStrip" aria-label={isCompleted ? "Hasil final siklus" : "KPI kolam"}>
