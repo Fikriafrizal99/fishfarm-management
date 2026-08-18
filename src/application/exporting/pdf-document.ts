@@ -25,7 +25,8 @@ function safeText(value: string): string {
     .replace(/→/g, "->")
     .replace(/•/g, "-")
     .replace(/…/g, "...")
-    .replace(/\u00a0/g, " ");
+    .replace(/\u00a0/g, " ")
+    .replace(/[^\x20-\x7E\u00A0-\u00FF]/g, "?");
 }
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
@@ -55,7 +56,7 @@ export async function createSimplePdf(input: SimplePdfInput): Promise<Uint8Array
   const muted = rgb(0.38, 0.45, 0.47);
   const line = rgb(0.88, 0.91, 0.91);
 
-  let page: PDFPage;
+  let page!: PDFPage;
   let y = 0;
   let pageNumber = 0;
 
@@ -140,7 +141,8 @@ export async function createSimplePdf(input: SimplePdfInput): Promise<Uint8Array
 }
 
 export function pdfDownload(bytes: Uint8Array, filename: string): Response {
-  return new Response(Buffer.from(bytes), {
+  const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  return new Response(body, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${filename}"`,
