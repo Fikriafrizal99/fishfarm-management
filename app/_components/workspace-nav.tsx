@@ -72,11 +72,15 @@ export function SalesWorkspaceNav({ active }: { active: SalesTab }) {
           { key: "fulfillment", label: "Fulfillment", href: "/sales/fulfillment" },
         ]}
       />
-      <div className="workspaceFutureTabs" aria-label="Modul Sales CRM berikutnya">
-        <span>Pipeline <small>next</small></span>
-        <span>Delivery <small>next</small></span>
-        <span>Invoice <small>next</small></span>
-        <span>Payment <small>next</small></span>
+      <div className="workspaceRoadmapHint" aria-label="Modul Sales CRM berikutnya">
+        <span>Next commercial flow</span>
+        <strong>Pipeline</strong>
+        <i />
+        <strong>Delivery</strong>
+        <i />
+        <strong>Invoice</strong>
+        <i />
+        <strong>Payment</strong>
       </div>
     </>
   );
