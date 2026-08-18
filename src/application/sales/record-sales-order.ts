@@ -1,9 +1,14 @@
-import { SalesOrderStatus } from "@/src/generated/prisma/client";
+import {
+  LeadStatus,
+  OpportunityStatus,
+  SalesOrderStatus,
+} from "@/src/generated/prisma/client";
 import { db } from "@/src/lib/db";
 
 export interface RecordSalesOrderCommand {
   farmId?: string;
   customerId: string;
+  opportunityId?: string;
   speciesId: string;
   quantityKg: number;
   unitPricePerKg: number;
@@ -29,10 +34,7 @@ export async function recordSalesOrder(command: RecordSalesOrderCommand) {
   assertPositive("Jumlah order", command.quantityKg);
   assertPositive("Harga jual", command.unitPricePerKg);
 
-  if (
-    command.requestedDeliveryDate &&
-    Number.isNaN(command.requestedDeliveryDate.getTime())
-  ) {
+  if (command.requestedDeliveryDate && Number.isNaN(command.requestedDeliveryDate.getTime())) {
     throw new Error("Tanggal pengiriman tidak valid");
   }
 
@@ -43,15 +45,30 @@ export async function recordSalesOrder(command: RecordSalesOrderCommand) {
   if (!farm) throw new Error("Farm belum tersedia");
 
   return db.$transaction(async (tx) => {
-    const [customer, species] = await Promise.all([
+    const [customer, species, opportunity] = await Promise.all([
       tx.customer.findFirst({
         where: { id: command.customerId, farmId: farm.id, active: true },
       }),
       tx.species.findUnique({ where: { id: command.speciesId } }),
+      command.opportunityId
+        ? tx.salesOpportunity.findFirst({
+            where: { id: command.opportunityId, farmId: farm.id },
+          })
+        : Promise.resolve(null),
     ]);
 
     if (!customer) throw new Error("Customer tidak ditemukan atau tidak aktif");
     if (!species) throw new Error("Species tidak ditemukan");
+    if (command.opportunityId && !opportunity) throw new Error("Opportunity tidak ditemukan");
+    if (opportunity && opportunity.customerId !== customer.id) {
+      throw new Error("Customer order harus sama dengan customer opportunity");
+    }
+    if (opportunity?.speciesId && opportunity.speciesId !== species.id) {
+      throw new Error("Species order harus sama dengan species opportunity");
+    }
+    if (opportunity && opportunity.status !== OpportunityStatus.OPEN) {
+      throw new Error("Hanya opportunity OPEN yang dapat dikonversi menjadi order");
+    }
 
     const today = new Date();
     const dailyCount = await tx.salesOrder.count({
@@ -66,6 +83,7 @@ export async function recordSalesOrder(command: RecordSalesOrderCommand) {
       data: {
         farmId: farm.id,
         customerId: customer.id,
+        opportunityId: opportunity?.id,
         orderNumber,
         status: SalesOrderStatus.CONFIRMED,
         orderDate: today,
@@ -83,6 +101,19 @@ export async function recordSalesOrder(command: RecordSalesOrderCommand) {
       },
       include: { customer: true, items: true },
     });
+
+    if (opportunity) {
+      await tx.salesOpportunity.update({
+        where: { id: opportunity.id },
+        data: { status: OpportunityStatus.WON },
+      });
+      if (opportunity.leadId) {
+        await tx.lead.update({
+          where: { id: opportunity.leadId },
+          data: { status: LeadStatus.CONVERTED, customerId: customer.id },
+        });
+      }
+    }
 
     return order;
   });
