@@ -1,6 +1,6 @@
 # Sales CRM — FishFarm Management
 
-Version: **0.9**
+Version: **0.11**
 
 ## 1. Purpose
 
@@ -12,7 +12,8 @@ Sales CRM is the commercial domain of FishFarm Management. It answers:
 - which harvested stock is committed,
 - what has actually been delivered,
 - what has been invoiced,
-- what has been paid.
+- what has been paid,
+- what receivable is overdue.
 
 Production and commercial data remain **loosely coupled**.
 
@@ -40,7 +41,7 @@ HarvestLot      ← bridge →        SalesOrder
 
 `Lead`, `Customer`, `Opportunity`, and `SalesOrder` never need a direct Pond or ProductionCycle reference.
 
-Physical traceability exists through:
+Physical traceability remains:
 
 ```text
 SalesOrderItem
@@ -56,7 +57,7 @@ ProductionCycle
 Pond
 ```
 
-## 3. CRM Lifecycle — V0.9
+## 3. Lifecycle Rules
 
 ### Acquisition
 
@@ -64,15 +65,12 @@ Pond
 Lead → Opportunity → Sales Order
 ```
 
-Rules:
-
-- Lead can exist without Customer, stock, pond, or harvest.
-- Creating Opportunity requires a known Customer.
-- When an Opportunity is created from a Lead, the Lead becomes `QUALIFIED` and is linked to the chosen Customer.
-- Opportunity starts as `OPEN`.
-- Converting an OPEN Opportunity into Sales Order changes Opportunity to `WON`.
-- If the Opportunity originated from a Lead, that Lead becomes `CONVERTED`.
-- Opportunity may be marked `LOST` only when it has no Sales Order.
+- Lead can exist before stock or harvest exists.
+- Opportunity requires a Customer.
+- Lead used for Opportunity becomes `QUALIFIED`.
+- Opportunity starts `OPEN`.
+- Conversion to Sales Order changes Opportunity to `WON` and originating Lead to `CONVERTED`.
+- Opportunity can become `LOST` only when no Sales Order exists.
 
 ### Supply Commitment
 
@@ -80,13 +78,10 @@ Rules:
 SalesOrderItem ← FulfillmentAllocation → HarvestLot
 ```
 
-Rules:
-
-- allocation quantity must not exceed remaining order quantity,
-- allocation quantity must not exceed available HarvestLot quantity,
-- species and farm must match,
-- active allocation consumes HarvestLot availability,
-- allocation begins fulfillment but does **not** mean the product has been delivered.
+- allocation cannot exceed remaining order quantity,
+- allocation cannot exceed available HarvestLot quantity,
+- farm and species must match,
+- allocation reserves supply but is not proof of delivery.
 
 ### Delivery
 
@@ -95,133 +90,60 @@ PLANNED → DISPATCHED → DELIVERED
     ↘ CANCELLED
 ```
 
-Rules:
+- only allocated quantity can be scheduled,
+- planned/dispatched quantity cannot be double-booked,
+- only `DELIVERED` quantity counts as actual fulfillment,
+- Sales Order becomes `FULFILLED` only after requested quantity is actually delivered.
 
-- only quantity already covered by active FulfillmentAllocation can be scheduled,
-- planned/dispatched Delivery reserves the allocated delivery quantity so it cannot be scheduled twice,
-- only `DELIVERED` quantity counts as actual delivered quantity,
-- Sales Order becomes `PARTIALLY_FULFILLED` when allocation/delivery activity starts,
-- Sales Order becomes `FULFILLED` only when requested quantity is actually delivered,
-- corresponding FulfillmentAllocation becomes `FULFILLED` when delivered quantity covers its active allocation.
-
-### Billing
-
-Invoice is a historical billing snapshot.
-
-Rules:
-
-- Invoice may be created against a non-cancelled Sales Order,
-- subtotal cannot exceed the uninvoiced order value,
-- blank subtotal means invoice the full remaining uninvoiced order value,
-- `adjustmentAmount` may represent an additional charge or discount,
-- total invoice may not be negative,
-- issued invoices start as `ISSUED`,
-- invoice with payments cannot be `VOID`.
-
-### Collection
+### Billing & Collection
 
 ```text
-ISSUED → PARTIALLY_PAID → PAID
+Invoice: ISSUED → PARTIALLY_PAID → PAID
+Payment: one or more cash receipts against Invoice
 ```
 
-Rules:
+- invoice subtotal cannot exceed remaining uninvoiced Sales Order value,
+- invoice is a billing snapshot,
+- payment cannot exceed invoice outstanding balance,
+- invoice with a payment cannot be voided,
+- multiple payments support DP, installment, and settlement.
 
-- Payment must reference one Invoice,
-- payment amount must be positive,
-- payment cannot exceed outstanding invoice balance,
-- partial collection sets Invoice to `PARTIALLY_PAID`,
-- full collection sets Invoice to `PAID`,
-- multiple Payment rows support DP / cicilan / settlement.
-
-## 4. Core Entities
-
-### Customer
-
-Known commercial account / buyer.
-
-### Lead
-
-Incoming potential buyer or demand.
-
-Status:
-
-```text
-NEW → CONTACTED → QUALIFIED → CONVERTED
-                         ↘ LOST
-```
-
-### Opportunity
-
-Qualified demand forecast attached to a Customer.
-
-Status:
-
-```text
-OPEN → WON
-   ↘ LOST
-```
-
-Pipeline value:
-
-```text
-expected_qty_kg × expected_price_per_kg
-```
-
-when both values exist.
-
-### SalesOrder / SalesOrderItem
-
-Commercial commitment and requested product quantity/price.
-
-### HarvestLot
-
-Sellable harvested stock originating from one production Harvest.
-
-### FulfillmentAllocation
-
-Only integration boundary between commercial demand and physical harvested source.
-
-### Delivery
-
-Physical shipment / hand-over record.
-
-### Invoice
-
-Stored billing snapshot with subtotal, adjustment, and total.
-
-### Payment
-
-Cash receipt against Invoice.
-
-## 5. Source-of-Truth Rules
+## 4. Core Source of Truth
 
 - production cost → `Expense`
 - biological harvest → `Harvest`
-- sellable harvested inventory → `HarvestLot`
+- sellable inventory → `HarvestLot`
 - qualified demand → `SalesOpportunity`
-- confirmed customer demand → `SalesOrderItem`
-- physical source commitment → `FulfillmentAllocation`
+- committed demand → `SalesOrderItem`
+- physical source reservation → `FulfillmentAllocation`
 - physical hand-over → `Delivery` + `DeliveryItem`
 - billing → `Invoice`
 - cash collection → `Payment`
 
-CRM data must not change biological KPI formulas.
+CRM data never changes biological KPI formulas.
 
-## 6. Sales Navigation — V0.9
+## 5. Sales Workspace — V0.11
+
+Visible navigation is intentionally compact:
 
 ```text
-Sales Overview
-├── Leads
-├── Customers
-├── Pipeline
-├── Orders
-├── Fulfillment
-├── Delivery
+Overview | Leads | Customers | Pipeline | Orders | Fulfillment | Finance
+```
+
+The domain model is **not** collapsed. Only the UI workspaces are consolidated:
+
+```text
+Fulfillment workspace
+├── Allocation
+└── Delivery
+
+Finance workspace
+├── Aging Piutang
 ├── Invoice
 └── Payment
 ```
 
-Routes:
+Canonical routes:
 
 - `/sales`
 - `/sales/leads`
@@ -229,35 +151,87 @@ Routes:
 - `/sales/pipeline`
 - `/sales/orders`
 - `/sales/fulfillment`
-- `/sales/deliveries`
-- `/sales/invoices`
-- `/sales/payments`
+- `/sales/finance`
 
-## 7. Dashboard KPIs
+Backward-compatible routes redirect to the canonical workspaces:
 
-- open leads
-- OPEN opportunity pipeline value
-- active order kg/value
-- allocated kg
-- available harvested kg
-- outstanding receivables
-- cash collected this month
+- `/sales/deliveries` → `/sales/fulfillment#delivery`
+- `/sales/invoices` → `/sales/finance#invoice`
+- `/sales/payments` → `/sales/finance#payment`
 
-Completed orders can leave the active-order widget while remaining fully auditable in Sales Order history.
+This keeps the application at two visible navigation layers while preserving separate Delivery, Invoice, and Payment records in PostgreSQL.
 
-## 8. Transitional Harvest Commercial Fields
+## 6. Customer Account History
 
-Legacy Harvest fields remain:
+`/sales/customers?customerId=...` now exposes account-level commercial history:
 
-- `buyer_name`
-- `selling_price_per_kg`
-- `revenue_amount`
+- total orders,
+- ordered kg,
+- order value,
+- average selling price per kg,
+- delivered kg,
+- invoiced amount,
+- collected amount,
+- outstanding receivable,
+- last order date,
+- purchase history by Sales Order,
+- current OPEN Opportunity count.
 
-They are compatibility snapshots from the production flow. They are not used as replacements for Customer, SalesOrder, Invoice, or Payment records.
+The history is calculated from Sales Order, Delivery, Invoice, and Payment records rather than a duplicate customer ledger.
 
-## 9. V0.9 Application Services
+## 7. Receivable Aging
 
-Commercial write/read logic lives in the application layer:
+`/sales/finance` groups active invoice balances by due date:
+
+```text
+Belum jatuh tempo
+1–30 hari
+31–60 hari
+>60 hari
+```
+
+Aging uses the Jakarta calendar date. An invoice due today remains current until the next calendar day.
+
+Outstanding is always derived from:
+
+```text
+Invoice.totalAmount - SUM(Payment.amount)
+```
+
+for active unpaid invoices.
+
+## 8. Export & Documents
+
+Commercial exports introduced in V0.11:
+
+- Sales Orders CSV,
+- Payments CSV,
+- Invoice PDF per invoice.
+
+Invoice PDF includes:
+
+- customer/account reference,
+- Sales Order item reference,
+- invoice subtotal/adjustment/total,
+- paid amount,
+- outstanding balance,
+- payment history.
+
+Because the current Invoice model stores a billing snapshot rather than invoice line items, Sales Order items shown on the PDF are explicitly labeled as **Sales Order references**. Partial invoice subtotal remains authoritative for the invoice amount.
+
+## 9. Dashboard KPIs
+
+- open leads,
+- OPEN opportunity pipeline value,
+- active order kg/value,
+- allocated kg,
+- available harvested kg,
+- outstanding receivables,
+- cash collected this month.
+
+## 10. Application Services
+
+Commercial write/read logic remains in the application layer:
 
 - `record-lead.ts`
 - `record-customer.ts`
@@ -272,49 +246,53 @@ Commercial write/read logic lives in the application layer:
 - `get-sales-lists.ts`
 - `get-fulfillment-workspace.ts`
 - `get-commercial-workspaces.ts`
+- `get-customer-profile.ts`
 
-Cross-row commercial balances are validated in these services because they depend on current transactional state.
-
-## 10. Development Scenario
-
-Seed data keeps pipeline semantics consistent:
-
-- Opportunity linked to `SO-DEV-001` is `WON`.
-- A separate Opportunity for Pengepul Nila Cianjur remains `OPEN` for Pipeline → Order testing.
-- `INV-DEV-001` remains `PARTIALLY_PAID` with Rp500.000 DP.
-- No HarvestLot allocation is seeded, so Fulfillment/Delivery can be tested after a real development Harvest is entered.
+Cross-row balances remain server-validated because they depend on current transactional state.
 
 ## 11. Runtime Validation Gate
 
-V0.9 is implemented remotely but must pass local validation:
+V0.11 must pass locally before being called runtime-stable:
 
 ```text
-Lead / existing Customer
+Lead / Customer
 → Opportunity
-→ Order conversion
-→ Harvest
-→ HarvestLot
-→ Fulfillment allocation
+→ Sales Order
+→ Harvest / HarvestLot
+→ Allocation
 → Delivery PLANNED
 → DISPATCHED
 → DELIVERED
 → Invoice
 → partial Payment
 → final Payment
-→ Dashboard reconciliation
+→ Finance aging / Dashboard reconciliation
+→ Invoice PDF
+→ CSV exports
 ```
 
-Do not call V0.9 runtime-stable until this flow passes `typecheck`, production build, and local transaction testing.
+Validation commands:
+
+```powershell
+git pull
+npm install
+npm run typecheck
+npm run build
+npm run dev
+```
+
+No database reset is required for V0.11 because this phase does not change the Prisma schema.
 
 ## 12. Future Extensions
 
-- quotations / quotation PDF
-- lead conversion that can create Customer automatically
-- customer price history
-- repeat-order reminders
-- overdue invoice alerts
-- customer profitability
-- delivery proof/photo
-- returns / claims
-- demand vs projected harvest capacity
-- WhatsApp interaction integration
+- customer interaction timeline write flow,
+- follow-up reminders,
+- multi-item Sales Order UI,
+- quotation workflow / quotation PDF,
+- order cancellation workflow,
+- delivery proof/photo,
+- returns / claims,
+- customer margin contribution,
+- repeat-order metrics,
+- WhatsApp interaction integration,
+- demand vs projected harvest capacity.
